@@ -28,3 +28,41 @@ The actual kubeflow instructions are available at [Install Kubeflow on AWS](http
 
 ### Install Instructions
 --------------------------------------------
+Before you being with Kubeflow, you must have a cluster up and running with AWS EKS.  
+Use the `eksctl` tool to create a specific cluster up on AWS for your needs.  
+Name it what you want and take note of that name as you will need it with `kfctl`.  
+## Step 1 - Configure `awscli` and `eksctl`
+Define your key and secret in `~/.aws/credentials`
+```
+[default]
+aws_access_key_id = SOMETHING
+aws_secret_access_key = SOMETHINGLONGER
+```
+Define your profile information (AWS Organization) in `~/.aws/config`.
+```
+[default]
+region = us-west-2
+output = json
+
+[profile bl-babylon]
+role_arn = arn:aws:iam::562046374233:role/BabylonOrgAccountAccessRole
+source_profile = default
+```
+***A sysadmin should have already given your AWS IAM (i.e. paloul, mshirdel) the appropriate  
+policy to be able to assume the Babylon sub-account role, `BabylonOrgAccountAccessRole`.***
+
+You must execute `awscli` or `eksctl` commands while assuming the correct role in order  
+to deploy the cluster under the right account. This is done with either the `--profile`  
+option or the use of an environment variable `AWS_PROFILE`, i.e. `export AWS_PROFILE=bl-profile1`, before executing any commands.
+
+Execute the following command to verify you configured `awscli` and `eksctl` correctly:
+```
+╰─❯ eksctl get cluster --verbose 4 --profile bl-babylon
+2021-04-09 16:34:00 [▶]  role ARN for the current session is "arn:aws:sts::562046374233:assumed-role/BabylonOrgAccountAccessRole/1618011239640991900"
+2021-04-09 16:34:00 [ℹ]  eksctl version 0.44.0
+2021-04-09 16:34:00 [ℹ]  using region us-west-2
+No clusters found
+```
+
+## Step 2 - Create EKS Cluster - [Link](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html)
+
