@@ -14,7 +14,7 @@ The actual kubeflow instructions are available at [Install Kubeflow on AWS](http
     * [Install AWS CLI - Linux](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html#cliv2-linux-install)
     * [Upgrade AWS CLI - Linux](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html#cliv2-linux-upgrade)
 * eksctl - *(official CLI for Amazon EKS)*
-    * [Install/Upgrade eksctl](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
+    * [Install/Upgrade eksctl - OSX/Linux/Windows](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
 * kfctl - *(official CLI for Kubeflow)*
     * OSX Installation - v1.2.0
         * `curl --silent --location "https://github.com/kubeflow/kfctl/releases/download/v1.2.0/kfctl_v1.2.0-0-gbc038f9_darwin.tar.gz" | tar xz -C /tmp`
