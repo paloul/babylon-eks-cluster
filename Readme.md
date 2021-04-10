@@ -53,7 +53,8 @@ policy to be able to assume the Babylon sub-account role, `BabylonOrgAccountAcce
 
 You must execute `awscli` or `eksctl` commands while assuming the correct role in order  
 to deploy the cluster under the right account. This is done with either the `--profile`  
-option or the use of an environment variable `AWS_PROFILE`, i.e. `export AWS_PROFILE=bl-profile1`, before executing any commands.
+option or the use of an environment variable `AWS_PROFILE`, i.e. `export AWS_PROFILE=bl-profile1`,  
+before executing any commands. Visit [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html#using-profiles) for information.
 
 Execute the following command to verify you configured `awscli` and `eksctl` correctly:
 ```
@@ -63,6 +64,32 @@ Execute the following command to verify you configured `awscli` and `eksctl` cor
 2021-04-09 16:34:00 [ℹ]  using region us-west-2
 No clusters found
 ```
+You can verify you are using the right profile with the following:
+```
+aws sts get-caller-identity
+```
+You should receive the following JSON listing the use of the `BabylonOrgAccountAccessRole` role.
+```
+{
+    "UserId": "AROAYFXETCFMU6ZHKQUOR:botocore-session-1618010824",
+    "Account": "562046374233",
+    "Arn": "arn:aws:sts::562046374233:assumed-role/BabylonOrgAccountAccessRole/botocore-session-1618010824"
+}
+```
+ 
 
-## Step 2 - Create EKS Cluster - [Link](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html)
-
+## Step 2 - Create EKS Cluster - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html)
+Execute the following `eksctl` command to create a cluster under the AWS Babylon account.
+```
+eksctl create cluster \
+ --name babylon-1 \
+ --version 1.19 \
+ --with-oidc \
+ --without-nodegroup \
+ --profile bl-babylon
+ ```
+ This command will take several minutes as `eksctl` creates the entire stack with  
+ supporting services inside AWS, i.e. VPC, Subnets, Security Groups, Route Tables,  
+ in addition to the cluster itself. Once completed you should see the following:
+ ```
+ ```
