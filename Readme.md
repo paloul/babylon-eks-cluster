@@ -80,6 +80,7 @@ You should receive the following JSON listing the use of the `BabylonOrgAccountA
 
 ## Step 2 - Create EKS Cluster - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html)
 Execute the following `eksctl` command to create a cluster under the AWS Babylon account.
+
 ```
 eksctl create cluster \
  --name babylon-1 \
@@ -87,9 +88,8 @@ eksctl create cluster \
  --with-oidc \
  --without-nodegroup \
  --profile bl-babylon
- ```
- This command will take several minutes as `eksctl` creates the entire stack with  
- supporting services inside AWS, i.e. VPC, Subnets, Security Groups, Route Tables,  
- in addition to the cluster itself. Once completed you should see the following:
- ```
- ```
+```
+
+This command will take several minutes as `eksctl` creates the entire stack with  
+supporting services inside AWS, i.e. VPC, Subnets, Security Groups, Route Tables,  
+in addition to the cluster itself. Once completed you should see the following:
