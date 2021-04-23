@@ -32,7 +32,7 @@ metadata:
 # Add all possible AZs to ensure nodes can be spun up in any AZ later on. 
 # THIS CAN'T BE CHANGED LATER. YOU WILL HAVE TO CREATE A NEW CLUSTER TO ADD NEW AZ SUPPORT.
 # This list applies to the whole clustr and isn't specific to nodegroups
-availabilityZones: ["us-west-2a", "us-west-2b",  "us-west-2d",  "us-west-2c"]
+availabilityZones: ["us-west-2a", "us-west-2b",  "us-west-2c",  "us-west-2d"]
 
 nodeGroups:
   - name: ng-1

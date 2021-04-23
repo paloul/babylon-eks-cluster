@@ -89,93 +89,28 @@ in addition to the cluster itself. Once completed you should see the following:
 ```
 [✓]  EKS cluster "babylon-1" in "us-west-2" region is ready
 ```
-To delete the cluster, you can use the following command:  
-```
-eksctl delete cluster -f aws-eks-cluster.yaml --profile bl-babylon
-```
-
---------------------------
-# *HERE - START FROM HERE*
---------------------------
-
-
-The cluster at this point will not have any node groups. Next, we must launch a managed  
-node group of Linux EC2 nodes that register with our new cluster. After the nodes join the  
-cluster, we can start to deploy the Kubeflow pieces as well as any other application specific  
-containers to the cluster. More detail [here](https://docs.aws.amazon.com/eks/latest/userguide/create-managed-node-group.html).  
-```
-eksctl create nodegroup \
-  --cluster babylon-1 \
-  --region us-west-2 \
-  --name ng1-m5large \
-  --tags "k8s.io/cluster-autoscaler/node-template/label/project=babylon,k8s.io/cluster-autoscaler/node-template/label/creator=paloul,k8s.io/cluster-autoscaler/node-template/label/type=application" \
-  --node-type m5.large \
-  --nodes 1 \
-  --nodes-min 1 \
-  --nodes-max 4 \
-  --ssh-access \
-  --ssh-public-key BL-Babylon \
-  --managed \
-  --node-labels "project=babylon,creator=paloul,type=application" \
-  --asg-access \
-  --full-ecr-access \
-  --alb-ingress-access \
-  --external-dns-access \
-  --profile bl-babylon
-```
-Take note that we are creating a node group with 1 node and m5.large EC2 Instance types.  
-The node group is allowed a minimum of 1 node and maximum of 4 nodes. Once completed you  
-should see the following:  
-```
-[✔]  created 1 managed nodegroup(s) in cluster "babylon-1"
-[ℹ]  checking security group configuration for all nodegroups
-[ℹ]  all nodegroups have up-to-date configuration
-```  
-We can also create another node group designated for GPU capable nodes as Spot EC2 instances:
-```
-eksctl create nodegroup \
-  --cluster babylon-1 \
-  --region us-west-2 \
-  --name ng2-p32xlarge \
-  --tags "k8s.io/cluster-autoscaler/node-template/label/project=babylon,k8s.io/cluster-autoscaler/node-template/label/creator=paloul,k8s.io/cluster-autoscaler/node-template/label/type=worker,k8s.io/cluster-autoscaler/node-template/label/k8s.amazonaws.com/accelerator=nvidia-tesla-v100" \
-  --node-zones "us-west-2a" \
-  --node-type p3.2xlarge \
-  --nodes 1 \
-  --nodes-min 1 \
-  --nodes-max 4 \
-  --ssh-access \
-  --ssh-public-key BL-Babylon \
-  --managed \
-  --spot \
-  --node-labels "project=babylon,creator=paloul,type=worker,k8s.amazonaws.com/accelerator=nvidia-tesla-v100" \
-  --asg-access \
-  --full-ecr-access \
-  --alb-ingress-access \
-  --external-dns-access \
-  --install-nvidia-plugin \
-  --profile bl-babylon
-```  
-The script behind `eksctl` is able to determine that GPU-enabled instance types are being  
-requested and will automatically select the right AMI for the nodes in the node group.  
-
 With nothing else running on the cluster you can check `kubectl` and see similar output:  
 ```
 ╰─❯ kubectl get nodes
-NAME                                          STATUS   ROLES    AGE     VERSION
-ip-192-168-25-95.us-west-2.compute.internal   Ready    <none>   3m58s   v1.19.6-eks-49a6c0
+NAME                                           STATUS   ROLES    AGE   VERSION
+ip-192-168-2-226.us-west-2.compute.internal    Ready    <none>   17m   v1.19.6-eks-49a6c0
+ip-192-168-26-228.us-west-2.compute.internal   Ready    <none>   17m   v1.19.6-eks-49a6c0
 
 ╰─❯ kubectl get pods -n kube-system
 NAME                       READY   STATUS    RESTARTS   AGE
-aws-node-mv9x8             1/1     Running   0          4m3s
-coredns-6548845887-5rkjj   1/1     Running   0          9d
-coredns-6548845887-fx6mm   1/1     Running   0          9d
-kube-proxy-rh8xr           1/1     Running   0          4m3s
+aws-node-2ssm5             1/1     Running   0          19m
+aws-node-xj5sb             1/1     Running   0          19m
+coredns-6548845887-fg74h   1/1     Running   0          25m
+coredns-6548845887-vlzff   1/1     Running   0          25m
+kube-proxy-hjgd5           1/1     Running   0          19m
+kube-proxy-jm2m9           1/1     Running   0          19m
 ```
-The node group starts up live EC2 machines that charge by the hour. In order to avoid being  
-charged while not in use please use the following command to delete your nodegroup (modify as needed):
+### Delete the EKS Cluster When Not Needed
+One node group starts up a min 2 EC2 machines that charge by the hour. The other node groups  
+are setup to scale down to 0 and only ramp up when pods are needed. In order to avoid being  
+charged while not in use please use the following command to delete your cluster:
 ```
-eksctl delete nodegroup --cluster babylon-1 --name ng1-m5large --profile bl-babylon
-eksctl delete nodegroup --cluster babylon-1 --name ng2-p32xlarge --profile bl-babylon
+eksctl delete cluster -f aws-eks-cluster.yaml --profile bl-babylon
 ```  
 ### Kubernetes Cluster Autoscaler - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/cluster-autoscaler.html)
 We now need to also install the Kubernetes Cluster Autoscaler in order to support the  
@@ -187,15 +122,28 @@ Open the Cluster Autoscaler deployment configuration for editing:
 ```
 kubectl edit deployment cluster-autoscaler -n kube-system
 ```
-* Find the `node-group-auto-discovery` property and add your cluster name to the end, i.e. 
+* Find the `node-group-auto-discovery` property in the autoscaler command deployment flag section  
+and add your cluster name to the end, i.e. 
 `--node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/<YOUR CLUSTER NAME>`.
-* Fine the `image` property and set the right image version to match your Kubernetes cluster, i.e. `image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.19.1`  
+* In the same section as the node-group-auto-discovery, add: `- --balance-similar-node-groups`
+* In the same section as the node-group-auto-discovery, add: `- --skip-nodes-with-system-pods=false`
+* Find the `image` property and set the right image version to match your Kubernetes cluster, i.e. `image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.19.1`. Version 1.19 is defined in the file  
+`aws-eks-cluster-spec.yaml`. If you have changed the version there, you should change it here as well.
 
 Verify that the Cluster Autoscaler was successfully launched:
 ```
 kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
 ```
-----
+### Install Spot Instance Termination Handler for Kubernetes - [Additional Info](https://github.com/aws/aws-node-termination-handler) 
+Since we have Spot instance nodes in the cluster, the Kubernetes control plan needs to be able to  
+respond quickly and appropriately to the underlying EC2 nodes becoming unavailable, i.e. especially  
+due to EC2 Spot instance interruption or recall. Spot instances cheaper, roughly 70-80% less  
+than On-Demand instances, but AWS reserves the right to recall Spot to support On-Demand usage.  
+Spot instances after all are just unused spare capacity offered at a lower price to spur more usage.  
+This termination handler feature though applies to both Spot and On-Demand instances, as it is  
+benficial to both. 
+
+---
 ## Step 3 - Deploy and Configure Kubeflow - [Additional Info](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#configure-kubeflow)
 Kubeflow supports the use of AWS IAM Roles for Service Accounts to fine grain control  
 AWS service access. This feature is only available for EKS controlled Kubernetes clusters.  
