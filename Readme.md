@@ -217,6 +217,24 @@ kube-proxy                       1         1         1       1            1     
 nvidia-device-plugin-daemonset   1         1         1       1            1           <none>                   57s
 ```
 
+### Request a Certificate from AWS Certificate Manager - [Additional Info](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html)
+Execute the following command to generate a ACM Certificate that will be used with the Kubeflow  
+configuration to connect the ingress to the URL we will setup. This probably was already done.   
+If a certificate for the same URL exists, there is no need to do this.
+```
+aws acm request-certificate \
+  --domain-name kubeflow.babylon.beyond.ai \
+  --validation-method DNS \
+  --idempotency-token 1234 \
+  --options CertificateTransparencyLoggingPreference=DISABLED
+```
+Take note of and record the CertificateArn that is provided:
+```
+{
+    "CertificateArn": "arn:aws:acm:us-west-2:562046374233:certificate/4b8c4bd2-ca0f-4d80-a52a-38cbaaa31d5a"
+}
+```
+
 ---
 ## Step 3 - Deploy and Configure Kubeflow - [Additional Info](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#configure-kubeflow)
 Kubeflow supports the use of AWS IAM Roles for Service Accounts to fine grain control  
@@ -244,3 +262,4 @@ Just as reference, if needed, you can delete the Kubeflow installation from your
 ```
 kfctl delete -V -f kfctl_aws.yaml
 ```
+
