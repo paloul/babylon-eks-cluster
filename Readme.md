@@ -234,6 +234,16 @@ Take note of and record the CertificateArn that is provided:
     "CertificateArn": "arn:aws:acm:us-west-2:562046374233:certificate/4b8c4bd2-ca0f-4d80-a52a-38cbaaa31d5a"
 }
 ```
+### Configure Auth0 - [Auth0](https://auth0.com/)  
+You will need administrator access to Auth0 to do this section. Please contact a sysadmin  
+to aid you in this process. Use the following URL
+[Authentication using OIDC](https://www.kubeflow.org/docs/distributions/aws/authentication-oidc/) and follow the  
+instructions. Ignore the part about Github Social connection setup.  
+An Auth0 app has already been created, `Babylon-BL`. It uses an existing Enterprise connction  
+that is connected to Beyond.ai's Azure Active Directory.  
+
+Make sure to update the `Allow Callback URLs` field with your intended domain and  
+path, like so `https://kubeflow.babylon.beyond.ai/oauth2/idpresponse`.
 
 ---
 ## Step 3 - Deploy and Configure Kubeflow - [Additional Info](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#configure-kubeflow)
@@ -241,11 +251,27 @@ Kubeflow supports the use of AWS IAM Roles for Service Accounts to fine grain co
 AWS service access. This feature is only available for EKS controlled Kubernetes clusters.  
 More information on the use of Roles for Service Accounts can be found [here](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#option-1-use-iam-for-service-account) and [here](https://www.kubeflow.org/docs/aws/iam-for-sa/).  
 Enabling it is as simple as making sure `enablePodIamPolicy:true` is defind in `kfctl_aws.yaml`.  
+This property is found in (or around) line 383 in the current `kfctl_aws.yaml`.
 
-The `kfctl_aws.yaml` has already been downloaded and user/password modified. It will be  
-imporant to update the username/password to your choosing. The yaml is configured to only  
-support Basic Authentication. Future work can be to move towards an oAuth authentication  
-using our Beyond.AI AAD.  
+The `kfctl_aws.yaml` has already been downloaded and modified. Certain modifications that need to be  
+made if you want to make changes are the following:
+
+* Update the `metadata.name` on line 6 with the Kubernetes cluster name, i.e. `babylon-1`.
+* Update the cluster name property value for the `alb-ingress-controller` on line 364.
+* Update `metadata.clusterName` on line 4 with FQDN Kubernetes cluster name
+    * Execute `kubectl config current-context`.
+    * Get the name of the cluster after the @ sign, i.e. `1619106470855186200@babylon-1.us-west-2.eksctl.io`.
+* Find all occurenced of `certArn` and replace with the ARN of the certificate you made above.
+* Update the Auth0 Client Id and Secret values: `oAuthClientId` and `oAuthClientSecret`.
+* If you are using a different Auth0 tenant, then you must replace the   
+  `https:/ai-beyond.auth0.com/` domain everywhere in the `kfctl_aws.yaml` file.
+    * `oidcAuthorizationEndpoint`
+    * `oidcIssuer`
+    * `oidcTokenEndpoint`
+    * `oidcUserInfoEndpoint`
+* If you are using a different AWS region, you must replace the old, `us-west-2`, with the new.
+
+### Execute kfctl and apply the yaml file 
 
 From within the `babylon-1` folder execute:
 ```
@@ -262,4 +288,3 @@ Just as reference, if needed, you can delete the Kubeflow installation from your
 ```
 kfctl delete -V -f kfctl_aws.yaml
 ```
-
