@@ -217,28 +217,24 @@ AWS service access. This feature is only available for EKS controlled Kubernetes
 More information on the use of Roles for Service Accounts can be found [here](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#option-1-use-iam-for-service-account) and [here](https://www.kubeflow.org/docs/aws/iam-for-sa/).  
 Enabling it is as simple as making sure `enablePodIamPolicy:true` is defind in `kfctl_aws.yaml`. 
 
-Execute the following either as separate commands in your terminal or the helper script  
-provided in this repo, `kfctl_env-vars.sh`.  
+Execute the following in your terminal:
 
 ```
-# Use the following kfctl configuration file for AWS setup without authentication:
-export CONFIG_URI="https://raw.githubusercontent.com/kubeflow/manifests/v1.2-branch/kfdef/kfctl_aws.v1.2.0.yaml"
-
-# Set an environment variable for your AWS cluster name.
+# Set an environment variable for your AWS cluster name. This will be picked by kfctl  
+# and set value to metadata.name. alb-ingress-controller requires correct value to  
+# provision application load balancers. Alb will be created with correct cluster name.
 export AWS_CLUSTER_NAME=babylon-1
 
 # Create the directory you want to store deployment, this has to be ${AWS_CLUSTER_NAME}
-mkdir ${AWS_CLUSTER_NAME} && cd ${AWS_CLUSTER_NAME}
+cd ${AWS_CLUSTER_NAME}
+```  
+The `kfctl_aws.yaml` has already been downloaded and user/password modified. It will be  
+imporant to update the username/password to your choosing. The yaml is configured to only  
+support Basic Authentication. Future work can be to move towards an oAuth authentication  
+using our Beyond.AI AAD.  
 
-# Download your configuration files, so that you can customize the configuration before deploying Kubeflow.
-wget -O kfctl_aws.yaml $CONFIG_URI
-```  
-As a PoC, we are not using any advanced authentication for Kubeflow. Open the `kfctl_aws.yaml`  
-and change the default username and password.  
+From within the `babylon-1` folder execute:
 ```
-spec:
-  auth:
-  basicAuth:
-    password: 12341234
-    username: admin@kubeflow.org
-```  
+kfctl apply -V -f kfctl_aws.yaml
+```
+
