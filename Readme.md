@@ -147,6 +147,7 @@ benficial to both.
 
 The Node Termination Handler uses a DaemonSet on each node instance. It monitors the EC2 meta-data  
 service on each node to capture any interruption notices. The workflow is summarized as:  
+
 * Identify that an instance (Spot) is being reclaimed.
 * Use the 2-minute notification window to gracefully prepare the node for termination.
 * Taint the node and cordon it off to prevent new pods from being placed on it.
