@@ -185,6 +185,30 @@ For reference, if necessary, you can delete the Helm package with:
 helm uninstall aws-node-termination-handler --namespace kube-system
 ```
 
+### Install the Nvidia Kubernetes Device Plugin - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html#gpu-ami)
+After your GPU nodes join your cluster, you must apply the NVIDIA device plugin for Kubernetes as  
+a DaemonSet on your cluster. It allows to automatically:
+
+* Expose the number of GPUs on each nodes of your cluster
+* Keep track of the health of your GPUs
+* Run GPU enabled containers in your Kubernetes cluster.
+
+Execute the following:
+```
+kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.9.0/nvidia-device-plugin.yml
+
+# You can check if you have any nodes with GPUs with the following command
+kubectl get nodes "-o=custom-columns=NAME:.metadata.name,GPU:.status.allocatable.nvidia\.com/gpu"
+
+# Get a list of DaemonSets and check if nvidia device plugin is created
+╰─❯ kubectl get daemonsets -n kube-system
+NAME                             DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+aws-node                         1         1         1       1            1           <none>                   26h
+aws-node-termination-handler     1         1         1       1            1           kubernetes.io/os=linux   59m
+kube-proxy                       1         1         1       1            1           <none>                   26h
+nvidia-device-plugin-daemonset   1         1         1       1            1           <none>                   57s
+```
+
 ---
 ## Step 3 - Deploy and Configure Kubeflow - [Additional Info](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#configure-kubeflow)
 Kubeflow supports the use of AWS IAM Roles for Service Accounts to fine grain control  
