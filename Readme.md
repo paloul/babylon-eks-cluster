@@ -13,6 +13,14 @@ The actual kubeflow instructions are available at [Install Kubeflow on AWS](http
     * [Install/Upgrade AWS CLI - OSX](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-mac.html#cliv2-mac-install-cmd-all-users)
     * [Install AWS CLI - Linux](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html#cliv2-linux-install)
     * [Upgrade AWS CLI - Linux](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html#cliv2-linux-upgrade)
+* AWS IAM Authenticator - *(helper tool to provide authentication to Kube cluster)*
+    * Linux Installation - v1.19.6
+        * `curl -o /tmp/aws-iam-authenticator "https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/aws-iam-authenticator"`
+        * `sudo mv /tmp/aws-iam-authenticator /usr/local/bin`
+        * `sudo chmod +x /usr/local/bin/aws-iam-authenticator`
+        * `aws-iam-authenticator help`
+    * OSX and Windows Installation 
+        * [Install AWS IAM Authenticator](https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html)
 * eksctl - *(official CLI for Amazon EKS)*
     * [Install/Upgrade eksctl - OSX/Linux/Windows](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
 * Helm - *(helpful Package Manager for Kubernetes)*
@@ -26,7 +34,6 @@ The actual kubeflow instructions are available at [Install Kubeflow on AWS](http
         * `curl --silent --location "https://github.com/kubeflow/kfctl/releases/download/v1.2.0/kfctl_v1.2.0-0-gbc038f9_linux.tar.gz" | tar xz -C /tmp`
         * `sudo mv /tmp/kfctl /usr/local/bin`
         * `kfctl version`
-
 
 ### Install Instructions
 --------------------------------------------
