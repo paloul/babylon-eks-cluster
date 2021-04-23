@@ -215,19 +215,8 @@ nvidia-device-plugin-daemonset   1         1         1       1            1     
 Kubeflow supports the use of AWS IAM Roles for Service Accounts to fine grain control  
 AWS service access. This feature is only available for EKS controlled Kubernetes clusters.  
 More information on the use of Roles for Service Accounts can be found [here](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#option-1-use-iam-for-service-account) and [here](https://www.kubeflow.org/docs/aws/iam-for-sa/).  
-Enabling it is as simple as making sure `enablePodIamPolicy:true` is defind in `kfctl_aws.yaml`. 
+Enabling it is as simple as making sure `enablePodIamPolicy:true` is defind in `kfctl_aws.yaml`.  
 
-Execute the following in your terminal:
-
-```
-# Set an environment variable for your AWS cluster name. This will be picked by kfctl  
-# and set value to metadata.name. alb-ingress-controller requires correct value to  
-# provision application load balancers. Alb will be created with correct cluster name.
-export AWS_CLUSTER_NAME=babylon-1
-
-# Create the directory you want to store deployment, this has to be ${AWS_CLUSTER_NAME}
-cd ${AWS_CLUSTER_NAME}
-```  
 The `kfctl_aws.yaml` has already been downloaded and user/password modified. It will be  
 imporant to update the username/password to your choosing. The yaml is configured to only  
 support Basic Authentication. Future work can be to move towards an oAuth authentication  
