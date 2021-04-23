@@ -193,11 +193,12 @@ a DaemonSet on your cluster. It allows to automatically:
 * Keep track of the health of your GPUs
 * Run GPU enabled containers in your Kubernetes cluster.
 
-Execute the following:
+Execute the following to install the DaemonSet on the cluster (yml installs to kube-system namespace):
 ```
 kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.9.0/nvidia-device-plugin.yml
-
-# You can check if you have any nodes with GPUs with the following command
+```
+Check the status with the following commands:
+```
 kubectl get nodes "-o=custom-columns=NAME:.metadata.name,GPU:.status.allocatable.nvidia\.com/gpu"
 
 # Get a list of DaemonSets and check if nvidia device plugin is created
