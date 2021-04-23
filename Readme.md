@@ -233,4 +233,14 @@ From within the `babylon-1` folder execute:
 ```
 kfctl apply -V -f kfctl_aws.yaml
 ```
+The above command will go through and instantiate all the Kubeflow pieces in the cluster.  
+The `babylon-1` folder will be populated with new files generated from the process.  
 
+Wait for all the resources to become ready in the kubeflow namespace.
+```
+kubectl -n kubeflow get all
+```
+Just as reference, if needed, you can delete the Kubeflow installation from your cluster with:
+```
+kfctl delete -V -f kfctl_aws.yaml
+```
