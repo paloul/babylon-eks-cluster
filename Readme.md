@@ -15,6 +15,8 @@ The actual kubeflow instructions are available at [Install Kubeflow on AWS](http
     * [Upgrade AWS CLI - Linux](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-linux.html#cliv2-linux-upgrade)
 * eksctl - *(official CLI for Amazon EKS)*
     * [Install/Upgrade eksctl - OSX/Linux/Windows](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
+* Helm - *(helpful Package Manager for Kubernetes)*
+    * [Install](https://docs.aws.amazon.com/eks/latest/userguide/helm.html)
 * kfctl - *(official CLI for Kubeflow)*
     * OSX Installation - v1.2.0
         * `curl --silent --location "https://github.com/kubeflow/kfctl/releases/download/v1.2.0/kfctl_v1.2.0-0-gbc038f9_darwin.tar.gz" | tar xz -C /tmp`
@@ -134,14 +136,53 @@ Verify that the Cluster Autoscaler was successfully launched:
 ```
 kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
 ```
-### Install Spot Instance Termination Handler for Kubernetes - [Additional Info](https://github.com/aws/aws-node-termination-handler) 
+### Install Spot Instance Termination Handler for Kubernetes - [Additional Info](https://github.com/aws/aws-node-termination-handler)  
 Since we have Spot instance nodes in the cluster, the Kubernetes control plan needs to be able to  
 respond quickly and appropriately to the underlying EC2 nodes becoming unavailable, i.e. especially  
 due to EC2 Spot instance interruption or recall. Spot instances cheaper, roughly 70-80% less  
 than On-Demand instances, but AWS reserves the right to recall Spot to support On-Demand usage.  
 Spot instances after all are just unused spare capacity offered at a lower price to spur more usage.  
 This termination handler feature though applies to both Spot and On-Demand instances, as it is  
-benficial to both. 
+benficial to both.  
+
+The Node Termination Handler uses a DaemonSet on each node instance. It monitors the EC2 meta-data  
+service on each node to capture any interruption notices. The workflow is summarized as:  
+* Identify that an instance (Spot) is being reclaimed.
+* Use the 2-minute notification window to gracefully prepare the node for termination.
+* Taint the node and cordon it off to prevent new pods from being placed on it.
+* Drain the connections on the running pods.
+* Replace the pods on remaining nodes to maintain the desired capacity.
+
+Make sure you have Helm installed at this point in time. 
+```
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update
+helm install aws-node-termination-handler eks/aws-node-termination-handler \
+ --namespace kube-system \
+ --set enableSpotInterruptionDraining="true" \
+ --set enableScheduledEventDraining="true"
+```  
+You can view it was correctly installed with:
+```
+╰─❯ kubectl get daemonsets -n kube-system
+NAME                           DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+aws-node                       1         1         1       1            1           <none>                   25h
+aws-node-termination-handler   1         1         1       1            1           kubernetes.io/os=linux   4m56s
+kube-proxy                     1         1         1       1            1           <none>                   25h
+
+╰─❯ kubectl get pods -n kube-system
+NAME                                  READY   STATUS    RESTARTS   AGE
+aws-node-2ssm5                        1/1     Running   0          25h
+aws-node-termination-handler-4pztt    1/1     Running   0          14s
+cluster-autoscaler-6fb975488f-q9522   1/1     Running   0          24h
+coredns-6548845887-fg74h              1/1     Running   0          25h
+coredns-6548845887-v2ch5              1/1     Running   0          24h
+kube-proxy-jm2m9                      1/1     Running   0          25h
+```
+For reference, if necessary, you can delete the Helm package with:  
+```
+helm uninstall aws-node-termination-handler --namespace kube-system
+```
 
 ---
 ## Step 3 - Deploy and Configure Kubeflow - [Additional Info](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#configure-kubeflow)
