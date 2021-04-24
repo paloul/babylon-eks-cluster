@@ -119,7 +119,7 @@ One node group starts up a min 2 EC2 machines that charge by the hour. The other
 are setup to scale down to 0 and only ramp up when pods are needed. In order to avoid being  
 charged while not in use please use the following command to delete your cluster:
 ```
-eksctl delete cluster -f aws-eks-cluster.yaml --profile bl-babylon
+eksctl delete cluster -f aws-eks-cluster-spec.yaml --profile bl-babylon
 ```  
 ### Kubernetes Cluster Autoscaler - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/cluster-autoscaler.html)
 We now need to also install the Kubernetes Cluster Autoscaler in order to support the  
