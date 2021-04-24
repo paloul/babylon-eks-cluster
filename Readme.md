@@ -90,7 +90,7 @@ You should receive the following JSON listing the use of the `BabylonOrgAccountA
 Execute the following `eksctl` command to create a cluster under the AWS Babylon account. You  
 should be in the same directory as the file `aws-eks-cluster.yaml`. 
 ```
-eksctl create cluster -f aws-eks-cluster.yaml --profile bl-babylon
+eksctl create cluster -f aws-eks-cluster-spec.yaml --profile bl-babylon
 ```
 This command will take several minutes as `eksctl` creates the entire stack with  
 supporting services inside AWS, i.e. VPC, Subnets, Security Groups, Route Tables,  
