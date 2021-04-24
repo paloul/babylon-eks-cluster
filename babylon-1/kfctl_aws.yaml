@@ -178,7 +178,7 @@ spec:
       - application
       parameters:
       - name: usageId
-        value: "6215223964392477492"
+        value: "8181076060931043181"
       - name: reportUsage
         value: "true"
       repoRef:
@@ -388,7 +388,7 @@ spec:
           oAuthClientId: utNJGEuQqynIIUxzfx1F0JfDeiC5005E
           oAuthClientSecret: pVz_OlWzUtkepbZFCTB9rIboDD2MxtBOUKzsXk9qSmGtLp6DEAOw9CUp1y02hPIf
           oidcAuthorizationEndpoint: https://ai-beyond.auth0.com/authorize
-          oidcIssuer: https:/ai-beyond.auth0.com/
+          oidcIssuer: https://ai-beyond.auth0.com/
           oidcTokenEndpoint: https://ai-beyond.auth0.com/oauth/token
           oidcUserInfoEndpoint: https://ai-beyond.auth0.com/userinfo
         region: us-west-2
@@ -396,3 +396,7 @@ spec:
   - name: manifests
     uri: https://github.com/kubeflow/manifests/archive/v1.2.0.tar.gz
   version: v1.2-branch
+status:
+  reposCache:
+  - localPath: '".cache/manifests/manifests-1.2.0"'
+    name: manifests
