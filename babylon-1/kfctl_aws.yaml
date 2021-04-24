@@ -178,7 +178,7 @@ spec:
       - application
       parameters:
       - name: usageId
-        value: "7996476243788582144"
+        value: "6215223964392477492"
       - name: reportUsage
         value: "true"
       repoRef:
@@ -362,6 +362,8 @@ spec:
       parameters:
       - name: clusterName
         value: babylon-1
+      - name: cluster-name
+        value: babylon-1
       repoRef:
         name: manifests
         path: aws/aws-alb-ingress-controller
@@ -394,7 +396,3 @@ spec:
   - name: manifests
     uri: https://github.com/kubeflow/manifests/archive/v1.2.0.tar.gz
   version: v1.2-branch
-status:
-  reposCache:
-  - localPath: '".cache/manifests/manifests-1.2.0"'
-    name: manifests
