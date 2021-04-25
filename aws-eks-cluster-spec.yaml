@@ -59,11 +59,11 @@ availabilityZones: ["us-west-2a", "us-west-2b",  "us-west-2c",  "us-west-2d"]
 
 # https://eksctl.io/usage/schema/#fargateProfiles
 fargateProfiles:
-  - name: fp-babylon-kubesystem
+  - name: fp-babylon
     selectors:
-      # All workloads in the "kube-system" Kubernetes namespace will be
+      # All workloads in the "fp-babylon" Kubernetes namespace will be
       # scheduled onto Fargate:
-      - namespace: kube-system
+      - namespace: fp-babylon
 
 nodeGroups:
   - name: ng-1
