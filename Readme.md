@@ -114,14 +114,14 @@ coredns-6548845887-vlzff   1/1     Running   0          25m
 kube-proxy-hjgd5           1/1     Running   0          19m
 kube-proxy-jm2m9           1/1     Running   0          19m
 ```
-### Delete the EKS Cluster When Not Needed
+### <u>Delete the EKS Cluster When Not Needed</u>
 One node group starts up a min 2 EC2 machines that charge by the hour. The other node groups  
 are setup to scale down to 0 and only ramp up when pods are needed. In order to avoid being  
 charged while not in use please use the following command to delete your cluster:
 ```
 eksctl delete cluster -f aws-eks-cluster-spec.yaml --profile bl-babylon
 ```  
-### Kubernetes Cluster Autoscaler - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/cluster-autoscaler.html)
+### <u>Kubernetes Cluster Autoscaler</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/cluster-autoscaler.html)
 We now need to also install the Kubernetes Cluster Autoscaler in order to support the  
 capability to scale up our underlying EC2 nodes. Execute the following:
 ```
@@ -143,7 +143,62 @@ Verify that the Cluster Autoscaler was successfully launched:
 ```
 kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
 ```
-### Install Spot Instance Termination Handler for Kubernetes - [Additional Info](https://github.com/aws/aws-node-termination-handler)  
+
+### <u>AWS Load Balancer Controller</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html)
+AWS Load Balancer Controller manages AWS Elastic Load Balancers for a Kubernetes cluster. The controller  
+is a `kube-system` namespace service that provisions:
+
+* An AWS Application Load Balancer (ALB) when you create a Kubernetes Ingress.
+* An AWS Network Load Balancer (NLB) when you create a Kubernetes Service of type LoadBalancer using  
+IP targets on 1.18 or later Amazon EKS clusters.
+
+More detail is at the link in the title to this section. An OIDC provider was already created by `eksctl`.  
+Follow these steps:
+```
+# Download an IAM policy for the AWS Load Balancer Controller that allows it to make calls to AWS APIs on your behalf. 
+curl -o elb_iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.1.3/docs/install/iam_policy.json
+
+# Create an IAM policy using the policy downloaded in the previous step.
+aws iam create-policy \
+    --policy-name AWSLoadBalancerControllerIAMPolicy \
+    --policy-document file://elb_iam_policy.json
+# Take note of the policy ARN that is returned.
+
+# Create an IAM role and annotate the Kubernetes service account named aws-load-balancer-controller in the kube-system namespace
+eksctl create iamserviceaccount \
+  --cluster=babylon-1 \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSLoadBalancerControllerIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve
+# eksctl will modify the existing CloudFormation for the cluster created to add this new service account
+
+# Install cert-manager to inject certificate configuration into the webhooks.
+kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
+
+# Download the controller specification. 
+curl -o aws-lb-ctrl-v2_1_3_full.yaml https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.1.3/docs/install/v2_1_3_full.yaml
+
+# Modify two things in the aws-lb-ctrl-v2_1_3_full.yaml file
+# 1. Delete the ServiceAccount section from the specification. 
+# 2. Set the --cluster-name value to your Amazon EKS cluster name in the Deployment spec section.
+
+# Apply the file and create the controller
+kubectl apply -f aws-lb-ctrl-v2_1_3_full.yaml
+```
+Check the created pods under the `kube-system` namespace to see if it was succesful:
+```
+─❯ kubectl get pods -n kube-system
+NAME                                           READY   STATUS    RESTARTS   AGE
+aws-load-balancer-controller-b698949bb-bvc6c   1/1     Running   0          2m35s
+aws-node-v5c2j                                 1/1     Running   0          51m
+cluster-autoscaler-778bbcdb98-n8cgs            1/1     Running   0          28m
+coredns-559b5db75d-5wnt5                       1/1     Running   0          17m
+kube-proxy-2lt6r                               1/1     Running   0          51m
+```
+
+### <u>Install Spot Instance Termination Handler for Kubernetes</u> - [Additional Info](https://github.com/aws/aws-node-termination-handler)  
 Since we have Spot instance nodes in the cluster, the Kubernetes control plan needs to be able to  
 respond quickly and appropriately to the underlying EC2 nodes becoming unavailable, i.e. especially  
 due to EC2 Spot instance interruption or recall. Spot instances cheaper, roughly 70-80% less  
@@ -192,7 +247,7 @@ For reference, if necessary, you can delete the Helm package with:
 helm uninstall aws-node-termination-handler --namespace kube-system
 ```
 
-### Install the Nvidia Kubernetes Device Plugin - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html#gpu-ami)
+### <u>Install the Nvidia Kubernetes Device Plugin</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html#gpu-ami)
 After your GPU nodes join your cluster, you must apply the NVIDIA device plugin for Kubernetes as  
 a DaemonSet on your cluster. It allows to automatically:
 
@@ -217,7 +272,7 @@ kube-proxy                       1         1         1       1            1     
 nvidia-device-plugin-daemonset   1         1         1       1            1           <none>                   57s
 ```
 
-### Request a Certificate from AWS Certificate Manager - [Additional Info](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html)
+### <u>Request a Certificate from AWS Certificate Manager</u> - [Additional Info](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html)
 Execute the following command to generate a ACM Certificate that will be used with the Kubeflow  
 configuration to connect the ingress to the URL we will setup. This probably was already done.   
 If a certificate for the same URL exists, there is no need to do this.
@@ -234,7 +289,7 @@ Take note of and record the CertificateArn that is provided:
     "CertificateArn": "arn:aws:acm:us-west-2:562046374233:certificate/4b8c4bd2-ca0f-4d80-a52a-38cbaaa31d5a"
 }
 ```
-### Configure Auth0 - [Auth0](https://auth0.com/)  
+### <u>Configure Auth0</u> - [Auth0](https://auth0.com/)  
 You will need administrator access to Auth0 to do this section. Please contact a sysadmin  
 to aid you in this process. Use the following URL
 [Authentication using OIDC](https://www.kubeflow.org/docs/distributions/aws/authentication-oidc/) and follow the  
@@ -253,7 +308,7 @@ More information on the use of Roles for Service Accounts can be found [here](ht
 Enabling it is as simple as making sure `enablePodIamPolicy:true` is defind in `kfctl_aws.yaml`.  
 This property is found in (or around) line 383 in the current `kfctl_aws.yaml`.
 
-The `kfctl_aws.yaml` has already been downloaded and modified. Certain modifications that need to be  
+The `kfctl_aws.yaml` has **already been downloaded and modified**. Certain modifications that need to be  
 made if you want to make changes are the following:
 
 * Update the `metadata.name` on line 6 with the Kubernetes cluster name, i.e. `babylon-1`.
@@ -271,7 +326,7 @@ made if you want to make changes are the following:
     * `oidcUserInfoEndpoint`
 * If you are using a different AWS region, you must replace the old, `us-west-2`, with the new.
 
-### Execute kfctl and apply the yaml file 
+### <u>Execute kfctl and apply the yaml file</u> 
 
 From within the `babylon-1` folder execute:
 ```
