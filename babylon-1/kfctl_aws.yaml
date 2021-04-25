@@ -396,7 +396,3 @@ spec:
   - name: manifests
     uri: https://github.com/kubeflow/manifests/archive/v1.2.0.tar.gz
   version: v1.2-branch
-status:
-  reposCache:
-  - localPath: '".cache/manifests/manifests-1.2.0"'
-    name: manifests
