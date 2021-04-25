@@ -178,67 +178,67 @@ nodeGroups:
         cloudWatch: true
         albIngress: true
 
-  - name: 4-gpu-spot-p3-8xlarge
-    minSize: 0
-    maxSize: 4
-    instancesDistribution:
-      # set your own max price. AWS spot instance prices no longer cross OnDemand price. 
-      # Comment out the field to default to OnDemand as max price. 
-      # maxPrice: 4.4
-      instanceTypes: ["p3.8xlarge"]
-      onDemandBaseCapacity: 0
-      onDemandPercentageAboveBaseCapacity: 0
-      spotAllocationStrategy: capacity-optimized
-    labels:
-      lifecycle: Ec2Spot
-      aws.amazon.com/spot: "true"
-      gpu-count: "4"
-    # Stick to one AZ for all GPU nodes. 
-    # In case of termination, this will prevent volumes from being unavailable 
-    # if the new instance got spun up in another AZ.
-    availabilityZones: ["us-west-2a"]
-    taints:
-      spotInstance: "true:PreferNoSchedule"
-    tags:
-      k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
-      k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot: "true"
-      k8s.io/cluster-autoscaler/node-template/label/gpu-count: "4"
-      k8s.io/cluster-autoscaler/node-template/taint/spotInstance: "true:PreferNoSchedule"
-      k8s.io/cluster-autoscaler/enabled: "true"
-      k8s.io/cluster-autoscaler/babylon-1: "owned"
-    iam:
-      withAddonPolicies:
-        autoScaler: true
-        cloudWatch: true
-        albIngress: true
+  # - name: 4-gpu-spot-p3-8xlarge
+  #   minSize: 0
+  #   maxSize: 4
+  #   instancesDistribution:
+  #     # set your own max price. AWS spot instance prices no longer cross OnDemand price. 
+  #     # Comment out the field to default to OnDemand as max price. 
+  #     # maxPrice: 4.4
+  #     instanceTypes: ["p3.8xlarge"]
+  #     onDemandBaseCapacity: 0
+  #     onDemandPercentageAboveBaseCapacity: 0
+  #     spotAllocationStrategy: capacity-optimized
+  #   labels:
+  #     lifecycle: Ec2Spot
+  #     aws.amazon.com/spot: "true"
+  #     gpu-count: "4"
+  #   # Stick to one AZ for all GPU nodes. 
+  #   # In case of termination, this will prevent volumes from being unavailable 
+  #   # if the new instance got spun up in another AZ.
+  #   availabilityZones: ["us-west-2a"]
+  #   taints:
+  #     spotInstance: "true:PreferNoSchedule"
+  #   tags:
+  #     k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+  #     k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot: "true"
+  #     k8s.io/cluster-autoscaler/node-template/label/gpu-count: "4"
+  #     k8s.io/cluster-autoscaler/node-template/taint/spotInstance: "true:PreferNoSchedule"
+  #     k8s.io/cluster-autoscaler/enabled: "true"
+  #     k8s.io/cluster-autoscaler/babylon-1: "owned"
+  #   iam:
+  #     withAddonPolicies:
+  #       autoScaler: true
+  #       cloudWatch: true
+  #       albIngress: true
 
-  - name: 8-gpu-spot-p3dn-24xlarge
-    minSize: 0
-    maxSize: 1
-    instancesDistribution:
-      # set your own max price. AWS spot instance prices no longer cross OnDemand price. 
-      # Comment out the field to default to OnDemand as max price. 
-      maxPrice: 11
-      instanceTypes: ["p3dn.24xlarge"]
-      onDemandBaseCapacity: 0
-      onDemandPercentageAboveBaseCapacity: 0
-      spotAllocationStrategy: capacity-optimized
-    labels:
-      lifecycle: Ec2Spot
-      aws.amazon.com/spot: "true"
-      gpu-count: "8"
-    availabilityZones: ["us-west-2a"]
-    taints:
-      spotInstance: "true:PreferNoSchedule"
-    tags:
-      k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
-      k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot: "true"
-      k8s.io/cluster-autoscaler/node-template/label/gpu-count: "8"
-      k8s.io/cluster-autoscaler/node-template/taint/spotInstance: "true:PreferNoSchedule"
-      k8s.io/cluster-autoscaler/enabled: "true"
-      k8s.io/cluster-autoscaler/babylon-1: "owned"
-    iam:
-      withAddonPolicies:
-        autoScaler: true
-        cloudWatch: true
-        albIngress: true
+  # - name: 8-gpu-spot-p3dn-24xlarge
+  #   minSize: 0
+  #   maxSize: 1
+  #   instancesDistribution:
+  #     # set your own max price. AWS spot instance prices no longer cross OnDemand price. 
+  #     # Comment out the field to default to OnDemand as max price. 
+  #     maxPrice: 11
+  #     instanceTypes: ["p3dn.24xlarge"]
+  #     onDemandBaseCapacity: 0
+  #     onDemandPercentageAboveBaseCapacity: 0
+  #     spotAllocationStrategy: capacity-optimized
+  #   labels:
+  #     lifecycle: Ec2Spot
+  #     aws.amazon.com/spot: "true"
+  #     gpu-count: "8"
+  #   availabilityZones: ["us-west-2a"]
+  #   taints:
+  #     spotInstance: "true:PreferNoSchedule"
+  #   tags:
+  #     k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+  #     k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot: "true"
+  #     k8s.io/cluster-autoscaler/node-template/label/gpu-count: "8"
+  #     k8s.io/cluster-autoscaler/node-template/taint/spotInstance: "true:PreferNoSchedule"
+  #     k8s.io/cluster-autoscaler/enabled: "true"
+  #     k8s.io/cluster-autoscaler/babylon-1: "owned"
+  #   iam:
+  #     withAddonPolicies:
+  #       autoScaler: true
+  #       cloudWatch: true
+  #       albIngress: true
