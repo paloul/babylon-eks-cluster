@@ -2,7 +2,7 @@
 
 This repo contains a poc effort for Kubeflow up on AWS EKS. Ideally, it is to help explore the capabilities of kubeflow in regards to the larger Babylon effort.
 
-The actual kubeflow instructions are available at [Install Kubeflow on AWS](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/).
+The actual kubeflow instructions are available at [Install Kubeflow on AWS](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/). Another good documentation page is [End-to-End Kubeflow on AWS](https://www.kubeflow.org/docs/distributions/aws/aws-e2e/)
 
 
 ### Prerequisites
@@ -200,6 +200,67 @@ coredns-559b5db75d-wx266                       1/1     Running   0          29m
 kube-proxy-bwlph                               1/1     Running   0          12m
 kube-proxy-t72lw                               1/1     Running   0          12m
 ```
+
+### <u>Install the Metrics Server</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/metrics-server.html)
+The Kubernetes Metrics Server is an aggregator of resource usage data in your cluster. By default, it  
+monitors CPU and Memory usage. Allows the ability to execute `kubectl top [nodes|pods]` and see metrics.
+```
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+Verify the Metrics Server was properly installed:
+```
+kubectl get deployment metrics-server -n kube-system
+
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+metrics-server   1/1     1            1           6m
+```
+
+### <u>Install the Kubernetes Dashboard UI</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/dashboard-tutorial.html)
+The Dashboard allows you to view CPU and Memory metrics on all running nodes in the cluster.  
+Execute on the cluster:
+```
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.5/aio/deploy/recommended.yaml
+
+# A manifest file, `eks-admin-service-account.yaml`, has already been created that  
+# defines a service account and a cluster role binding called `eks-admin`.  
+# These provide you the ability to securely connect to the dashboard with  
+# admin-level permissions. 
+
+# Apply the service account and cluster role binding.
+kubectl apply -f eks-admin-service-account.yaml
+```
+With the Dashboard deployed to your cluster and the service account created, you can connect to the dashboard  
+with that service account.  
+
+Retrieve an authentication token for the eks-admin service account. Copy the <authentication_token>  
+value from the output. You will use this token to connect to the dashboard.
+```
+kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep eks-admin | awk '{print $1}')
+```
+
+You will see the following response. The token generated can be used to login to the Dashboard.
+```
+Name:         eks-admin-token-b5zv4
+Namespace:    kube-system
+Labels:       <none>
+Annotations:  kubernetes.io/service-account.name=eks-admin
+              kubernetes.io/service-account.uid=bcfe66ac-39be-11e8-97e8-026dce96b6e8
+
+Type:  kubernetes.io/service-account-token
+
+Data
+====
+ca.crt:     1025 bytes
+namespace:  11 bytes
+token:      <AUTHENTICATION_TOKEN>
+```
+You must execute `kubectly proxy` in order to connect your `localhost` to the cluster.  
+It is not a good idea and ill-advised to expose the Dashboard Admin via any external ingress means.
+```
+kubectl proxy
+```
+Now you open your browser and visit [THIS](http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/#!/login). Choose **TOKEN**, pase the <AUTHENTICATION_TOKEN> output from the  
+previous command into the *Token* field and choose **SIGN IN**.  
 
 ### <u>Install Spot Instance Termination Handler for Kubernetes</u> - [Additional Info](https://github.com/aws/aws-node-termination-handler)  
 Since we have Spot instance nodes in the cluster, the Kubernetes control plan needs to be able to  
