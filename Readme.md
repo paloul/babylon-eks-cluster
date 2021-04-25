@@ -155,10 +155,10 @@ IP targets on 1.18 or later Amazon EKS clusters.
 More detail is at the link in the title to this section. An OIDC provider was already created by `eksctl`.  
 Follow these steps:
 ```
-# Download an IAM policy for the AWS Load Balancer Controller that allows it to make calls to AWS APIs on your behalf. 
+# Download an IAM policy for the AWS Load Balancer Controller that allows it to make calls to AWS APIs on your behalf. This might've already been done as it exists at the AWS account level.
 curl -o elb_iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.1.3/docs/install/iam_policy.json
 
-# Create an IAM policy using the policy downloaded in the previous step.
+# Create an IAM policy using the policy downloaded in the previous step. This might've already been done as it exists at the AWS account level.
 aws iam create-policy \
     --policy-name AWSLoadBalancerControllerIAMPolicy \
     --policy-document file://elb_iam_policy.json
@@ -191,11 +191,14 @@ Check the created pods under the `kube-system` namespace to see if it was succes
 ```
 ─❯ kubectl get pods -n kube-system
 NAME                                           READY   STATUS    RESTARTS   AGE
-aws-load-balancer-controller-b698949bb-bvc6c   1/1     Running   0          2m35s
-aws-node-v5c2j                                 1/1     Running   0          51m
-cluster-autoscaler-778bbcdb98-n8cgs            1/1     Running   0          28m
-coredns-559b5db75d-5wnt5                       1/1     Running   0          17m
-kube-proxy-2lt6r                               1/1     Running   0          51m
+aws-load-balancer-controller-b698949bb-gmlm8   1/1     Running   0          38s
+aws-node-4mk9j                                 1/1     Running   0          12m
+aws-node-smm5c                                 1/1     Running   0          12m
+cluster-autoscaler-778bbcdb98-mxwnv            1/1     Running   0          5m36s
+coredns-559b5db75d-fjmhq                       1/1     Running   0          29m
+coredns-559b5db75d-wx266                       1/1     Running   0          29m
+kube-proxy-bwlph                               1/1     Running   0          12m
+kube-proxy-t72lw                               1/1     Running   0          12m
 ```
 
 ### <u>Install Spot Instance Termination Handler for Kubernetes</u> - [Additional Info](https://github.com/aws/aws-node-termination-handler)  
