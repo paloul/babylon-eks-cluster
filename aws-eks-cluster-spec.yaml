@@ -57,12 +57,12 @@ availabilityZones: ["us-west-2a", "us-west-2b",  "us-west-2c",  "us-west-2d"]
   #keyARN: arn:aws:kms:us-west-2:<account>:key/<key>
 
 # https://eksctl.io/usage/schema/#fargateProfiles
-fargateProfiles:
-  - name: fp-babylon
-    selectors:
+#fargateProfiles:
+  #- name: fp-babylon
+    #selectors:
       # All workloads in the "fp-babylon" Kubernetes namespace will be
       # scheduled onto Fargate:
-      - namespace: fp-babylon
+      #- namespace: fp-babylon
 
 nodeGroups:
   - name: ng-1
