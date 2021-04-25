@@ -37,7 +37,6 @@ iam:
 
 vpc:
   cidr: 10.10.0.0/16
-  autoAllocateIPv6: true
   # https://eksctl.io/usage/vpc-networking/#nat-gateway
   nat:
     gateway: HighlyAvailable # other options: Disable, Single (default)
