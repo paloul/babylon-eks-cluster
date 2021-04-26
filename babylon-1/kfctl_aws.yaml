@@ -1,9 +1,6 @@
 apiVersion: kfdef.apps.kubeflow.org/v1
 kind: KfDef
 metadata:
-  clusterName: babylon-1.us-west-2.eksctl.io
-  creationTimestamp: null
-  name: babylon-1
   namespace: kubeflow
 spec:
   applications:
@@ -15,23 +12,23 @@ spec:
   - kustomizeConfig:
       repoRef:
         name: manifests
-        path: stacks/aws/application/istio-stack
+        path: application/v3
+    name: application
+  - kustomizeConfig:
+      repoRef:
+        name: manifests
+        path: stacks/aws/application/istio-1-3-1-stack
     name: istio-stack
   - kustomizeConfig:
       repoRef:
         name: manifests
-        path: stacks/aws/application/cluster-local-gateway
+        path: stacks/aws/application/cluster-local-gateway-1-3-1
     name: cluster-local-gateway
   - kustomizeConfig:
       repoRef:
         name: manifests
-        path: stacks/aws/application/istio
+        path: istio/istio/base
     name: istio
-  - kustomizeConfig:
-      repoRef:
-        name: manifests
-        path: application/v3
-    name: application
   - kustomizeConfig:
       repoRef:
         name: manifests
@@ -55,6 +52,16 @@ spec:
   - kustomizeConfig:
       repoRef:
         name: manifests
+        path: stacks/aws/application/oidc-authservice
+    name: oidc-authservice
+  - kustomizeConfig:
+      repoRef:
+        name: manifests
+        path: stacks/aws/application/dex-auth
+    name: dex
+  - kustomizeConfig:
+      repoRef:
+        name: manifests
         path: admission-webhook/bootstrap/overlays/application
     name: bootstrap
   - kustomizeConfig:
@@ -62,6 +69,16 @@ spec:
         name: manifests
         path: spark/spark-operator/overlays/application
     name: spark-operator
+  - kustomizeConfig:
+      repoRef:
+        name: manifests
+        path: stacks/aws
+    name: kubeflow-apps
+  - kustomizeConfig:
+      repoRef:
+        name: manifests
+        path: aws/istio-ingress/base_v3
+    name: istio-ingress
   - kustomizeConfig:
       repoRef:
         name: manifests
@@ -77,42 +94,21 @@ spec:
         name: manifests
         path: stacks/aws/application/spartakus
     name: spartakus
-  - kustomizeConfig:
-      repoRef:
-        name: manifests
-        path: stacks/aws
-    name: kubeflow-apps
-  - kustomizeConfig:
-      repoRef:
-        name: manifests
-        path: stacks/aws/application/istio-ingress-cognito
-    name: istio-ingress
-  - kustomizeConfig:
-      repoRef:
-        name: manifests
-        path: aws/aws-istio-authz-adaptor/base_v3
-    name: aws-istio-authz-adaptor
   plugins:
   - kind: KfAwsPlugin
     metadata:
-      creationTimestamp: null
       name: aws
     spec:
       auth:
-        enablePodIamPolicy: true
-        oidc:
-          certArn: arn:aws:acm:us-west-2:562046374233:certificate/e0445d16-9f12-4ee7-a846-ac6c13619986
-          oAuthClientId: utNJGEuQqynIIUxzfx1F0JfDeiC5005E
-          oAuthClientSecret: pVz_OlWzUtkepbZFCTB9rIboDD2MxtBOUKzsXk9qSmGtLp6DEAOw9CUp1y02hPIf
-          oidcAuthorizationEndpoint: https://ai-beyond.auth0.com/authorize
-          oidcIssuer: https://ai-beyond.auth0.com/
-          oidcTokenEndpoint: https://ai-beyond.auth0.com/oauth/token
-          oidcUserInfoEndpoint: https://ai-beyond.auth0.com/userinfo
-        region: us-west-2
+        basicAuth:
+          password: BeyondL1m1t$
+          username: babylon@beyond.ai
+      region: us-west-2
+      enablePodIamPolicy: true
+      # If you don't use IAM Role for Service Account, you can still use node instance roles.
+      #roles:
+      #- eksctl-kubeflow-aws-nodegroup-ng-a2-NodeInstanceRole-xxxxxxx
   repos:
   - name: manifests
-    uri: https://github.com/kubeflow/manifests/archive/v1.0-branch.tar.gz
-status:
-  reposCache:
-  - localPath: '".cache/manifests/manifests-1.0-branch"'
-    name: manifests
+    uri: https://github.com/kubeflow/manifests/archive/v1.2.0.tar.gz
+  version: v1.2-branch
