@@ -136,7 +136,7 @@ and add your cluster name to the end, i.e.
 `--node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/<YOUR CLUSTER NAME>`.
 * In the same section as the node-group-auto-discovery, add: `- --balance-similar-node-groups`
 * In the same section as the node-group-auto-discovery, add: `- --skip-nodes-with-system-pods=false`
-* Find the `image` property and set the right image version to match your Kubernetes cluster, i.e. `image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.19.1`. Version 1.19 is defined in the file  
+* Find the `image` property and set the right image version to match your Kubernetes cluster, i.e. `image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.18.3`. Kubernetes Version 1.18 is defined in the file  
 `aws-eks-cluster-spec.yaml`. If you have changed the version there, you should change it here as well.
 
 Verify that the Cluster Autoscaler was successfully launched:
@@ -155,24 +155,30 @@ IP targets on 1.18 or later Amazon EKS clusters.
 More detail is at the link in the title to this section. An OIDC provider was already created by `eksctl`.  
 Follow these steps:
 ```
-# Download an IAM policy for the AWS Load Balancer Controller that allows it to make calls to AWS APIs on your behalf. This might've already been done as it exists at the AWS account level.
+# Download an IAM policy for the AWS Load Balancer Controller that allows it to make calls  
+# to AWS APIs on your behalf. This might've already been done as it exists at the AWS
+# account level.
 curl -o elb_iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.1.3/docs/install/iam_policy.json
 
-# Create an IAM policy using the policy downloaded in the previous step. This might've already been done as it exists at the AWS account level.
+# Create an IAM policy using the policy downloaded in the previous step. 
+# This might've already been done as it exists at the AWS account level.
 aws iam create-policy \
     --policy-name AWSLoadBalancerControllerIAMPolicy \
     --policy-document file://elb_iam_policy.json
 # Take note of the policy ARN that is returned.
 
-# Create an IAM role and annotate the Kubernetes service account named aws-load-balancer-controller in the kube-system namespace
+# Create an IAM role and annotate the Kubernetes service account named
+# aws-load-balancer-controller in the kube-system namespace
 eksctl create iamserviceaccount \
   --cluster=babylon-1 \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
   --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSLoadBalancerControllerIAMPolicy \
   --override-existing-serviceaccounts \
+  --profile bl-babylon \
   --approve
-# eksctl will modify the existing CloudFormation for the cluster created to add this new service account
+# eksctl will modify the existing CloudFormation for the cluster created to 
+# add this new service account
 
 # Install cert-manager to inject certificate configuration into the webhooks.
 kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
@@ -380,7 +386,7 @@ eksctl-babylon-1-nodegroup-ng-1-NodeInstanceRole-1MHKUDMETSLJX
 eksctl-babylon-1-nodegroup-ng-2-NodeInstanceRole-1W1HZ9GOHVBYK
 ```
 The above command assumes you created the cluster with `eksctl`, which if you followed this  
-document, you did.  
+document, you did use `eksctl`.  
 Change the roles in file `kfctl_aws.yaml` to match your Worker Node roles, i.e.:
 ```
 roles:
