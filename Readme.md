@@ -366,11 +366,29 @@ path, like so `https://kubeflow.babylon.beyond.ai/oauth2/idpresponse`.
 
 ---
 ## Step 3 - Deploy and Configure Kubeflow - [Additional Info](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#configure-kubeflow)
-Kubeflow supports the use of AWS IAM Roles for Service Accounts to fine grain control  
-AWS service access. This feature is only available for EKS controlled Kubernetes clusters.  
-More information on the use of Roles for Service Accounts can be found [here](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#option-1-use-iam-for-service-account) and [here](https://www.kubeflow.org/docs/aws/iam-for-sa/).  
-Enabling it is as simple as making sure `enablePodIamPolicy:true` is defind in `kfctl_aws.yaml`.  
-This property is found in (or around) line 383 in the current `kfctl_aws.yaml`.
+Kubeflow does not work with AWS IAM Roles for Service Accounts when the node groups are unmanaged.  
+We have to rely on the traditional way to assign policies to node group roles. Please refer  
+to and follow the instructions [HERE](https://www.kubeflow.org/docs/distributions/aws/deploy/install-kubeflow/#option-2-use-node-group-role).
+
+You can execute the command to find the Worker Node roles created with:
+```
+╰─❯ aws iam list-roles --profile bl-babylon | jq -r ".Roles[] | select(.RoleName | startswith(\"eksctl-$AWS_CLUSTER_NAME\") and contains(\"NodeInstanceRole\")).RoleName"
+
+eksctl-babylon-1-nodegroup-1-gpu-NodeInstanceRole-FGB7PK69GRR6
+eksctl-babylon-1-nodegroup-1-gpu-NodeInstanceRole-YQU0HB0S9P6C
+eksctl-babylon-1-nodegroup-ng-1-NodeInstanceRole-1MHKUDMETSLJX
+eksctl-babylon-1-nodegroup-ng-2-NodeInstanceRole-1W1HZ9GOHVBYK
+```
+The above command assumes you created the cluster with `eksctl`, which if you followed this  
+document, you did.  
+Change the roles in file `kfctl_aws.yaml` to match your Worker Node roles, i.e.:
+```
+roles:
+      - eksctl-babylon-1-nodegroup-1-gpu-NodeInstanceRole-FGB7PK69GRR6
+      - eksctl-babylon-1-nodegroup-1-gpu-NodeInstanceRole-YQU0HB0S9P6C
+      - eksctl-babylon-1-nodegroup-ng-1-NodeInstanceRole-1MHKUDMETSLJX
+      - eksctl-babylon-1-nodegroup-ng-2-NodeInstanceRole-1W1HZ9GOHVBYK
+```
 
 The `kfctl_aws.yaml` has **already been downloaded and modified**. Certain modifications that need to be  
 made if you want to make changes are the following:
@@ -405,10 +423,22 @@ kfctl apply -V -f kfctl_aws.yaml
 The above command will go through and instantiate all the Kubeflow pieces in the cluster.  
 The `babylon-1` folder will be populated with new files generated from the process.  
 
-Wait for all the resources to become ready in the kubeflow namespace.
+Wait for all the resources to become ready in the kubeflow namespace. From my experience so far,  
+this takes roughly 20-30 mins to have all resources finally be *READY*. 
 ```
 kubectl -n kubeflow get all
 ```
+When all the resources are finally *READY*, you can execute this command to get the URL to the  
+KubeFlow central dashboard:
+```
+kubectl get ingress -n istio-system
+
+NAMESPACE      NAME            HOSTS   ADDRESS                                                             PORTS   AGE
+istio-system   istio-ingress   *       a743484b-istiosystem-istio-2af2-xxxxxx.us-west-2.elb.amazonaws.com   80      1h
+```
+If you so choose, you can go into `Route53` and set a custom domain to forward to the ALB URL  
+from that command.
+
 Just as reference, if needed, you can delete the Kubeflow installation from your cluster with:
 ```
 kfctl delete -V -f kfctl_aws.yaml

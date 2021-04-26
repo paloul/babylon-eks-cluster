@@ -1,6 +1,9 @@
 apiVersion: kfdef.apps.kubeflow.org/v1
 kind: KfDef
 metadata:
+  clusterName: babylon-1.us-west-2.eksctl.io
+  creationTimestamp: null
+  name: babylon-1
   namespace: kubeflow
 spec:
   applications:
@@ -97,18 +100,25 @@ spec:
   plugins:
   - kind: KfAwsPlugin
     metadata:
+      creationTimestamp: null
       name: aws
     spec:
       auth:
         basicAuth:
           password: BeyondL1m1t$
           username: babylon@beyond.ai
+      enablePodIamPolicy: false
       region: us-west-2
-      enablePodIamPolicy: true
-      # If you don't use IAM Role for Service Account, you can still use node instance roles.
-      #roles:
-      #- eksctl-kubeflow-aws-nodegroup-ng-a2-NodeInstanceRole-xxxxxxx
+      roles:
+      - eksctl-babylon-1-nodegroup-1-gpu-NodeInstanceRole-FGB7PK69GRR6
+      - eksctl-babylon-1-nodegroup-1-gpu-NodeInstanceRole-YQU0HB0S9P6C
+      - eksctl-babylon-1-nodegroup-ng-1-NodeInstanceRole-1MHKUDMETSLJX
+      - eksctl-babylon-1-nodegroup-ng-2-NodeInstanceRole-1W1HZ9GOHVBYK
   repos:
   - name: manifests
     uri: https://github.com/kubeflow/manifests/archive/v1.2.0.tar.gz
   version: v1.2-branch
+status:
+  reposCache:
+  - localPath: '".cache/manifests/manifests-1.2.0"'
+    name: manifests
