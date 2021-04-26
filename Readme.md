@@ -394,6 +394,12 @@ made if you want to make changes are the following:
 
 From within the `babylon-1` folder execute:
 ```
+# Set an environment variable for your AWS cluster name.  This will be picked by 
+# kfctl and set value to metadata.name. alb-ingress-controller requires correct 
+# value to provision application load balancers. Alb will be only created with 
+# correct cluster name.
+export AWS_CLUSTER_NAME=<YOUR EKS CLUSTER NAME>
+
 kfctl apply -V -f kfctl_aws.yaml
 ```
 The above command will go through and instantiate all the Kubeflow pieces in the cluster.  
