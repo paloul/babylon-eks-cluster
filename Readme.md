@@ -342,7 +342,7 @@ configuration to connect the ingress to the URL we will setup. This probably was
 If a certificate for the same URL exists, there is no need to do this.
 ```
 aws acm request-certificate \
-  --domain-name kubeflow.babylon.beyond.ai \
+  --domain-name "*.babylon.beyond.ai" \
   --validation-method DNS \
   --idempotency-token 1234 \
   --options CertificateTransparencyLoggingPreference=DISABLED
@@ -350,7 +350,7 @@ aws acm request-certificate \
 Take note of and record the CertificateArn that is provided:
 ```
 {
-    "CertificateArn": "arn:aws:acm:us-west-2:562046374233:certificate/4b8c4bd2-ca0f-4d80-a52a-38cbaaa31d5a"
+    "CertificateArn": "arn:aws:acm:us-west-2:562046374233:certificate/e0445d16-9f12-4ee7-a846-ac6c13619986"
 }
 ```
 ### <u>Configure Auth0</u> - [Auth0](https://auth0.com/)  
