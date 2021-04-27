@@ -418,11 +418,16 @@ made if you want to make changes are the following:
 
 From within the `babylon-1` folder execute:
 ```
+# Set the profile to use for underlying commands executed by kfctl.
+# This is needed because `kfctl` does not use the `--profile` option 
+# when executing underlying `aws` and `eksctl` commands.
+export AWS_PROFILE=bl-babylon
+
 # Set an environment variable for your AWS cluster name.  This will be picked by 
 # kfctl and set value to metadata.name. alb-ingress-controller requires correct 
 # value to provision application load balancers. Alb will be only created with 
 # correct cluster name.
-export AWS_CLUSTER_NAME=<YOUR EKS CLUSTER NAME>
+export AWS_CLUSTER_NAME=babylon-1
 
 kfctl apply -V -f kfctl_aws.yaml
 ```
