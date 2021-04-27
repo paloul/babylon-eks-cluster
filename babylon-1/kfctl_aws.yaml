@@ -110,15 +110,17 @@ spec:
       enablePodIamPolicy: false
       region: us-west-2
       roles:
-      - eksctl-babylon-1-nodegroup-1-gpu-NodeInstanceRole-1TYAU8TKVZSO
-      - eksctl-babylon-1-nodegroup-1-gpu-NodeInstanceRole-B9V72WAO1FZE
-      - eksctl-babylon-1-nodegroup-ng-1-NodeInstanceRole-1DDW5HJ7SB5CP
-      - eksctl-babylon-1-nodegroup-ng-2-NodeInstanceRole-4YH4YOG49WHT
+      - eksctl-babylon-1-nodegroup-1-gpu-NodeInstanceRole-1FM9SQH7BJ7S4
+      - eksctl-babylon-1-nodegroup-1-gpu-NodeInstanceRole-4AY2UKSK691W
+      - eksctl-babylon-1-nodegroup-ng-1-NodeInstanceRole-1WSJ6VSUT5NNV
+      - eksctl-babylon-1-nodegroup-ng-2-NodeInstanceRole-116M00DODZPZ0
   repos:
   - name: manifests
     uri: https://github.com/kubeflow/manifests/archive/v1.2.0.tar.gz
   version: v1.2-branch
 status:
   reposCache:
+  - localPath: '".cache/manifests/manifests-1.2.0"'
+    name: manifests
   - localPath: '".cache/manifests/manifests-1.2.0"'
     name: manifests
