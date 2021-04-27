@@ -144,69 +144,6 @@ Verify that the Cluster Autoscaler was successfully launched:
 kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
 ```
 
-### <u>AWS Load Balancer Controller</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html)
-AWS Load Balancer Controller manages AWS Elastic Load Balancers for a Kubernetes cluster. The controller  
-is a `kube-system` namespace service that provisions:
-
-* An AWS Application Load Balancer (ALB) when you create a Kubernetes Ingress.
-* An AWS Network Load Balancer (NLB) when you create a Kubernetes Service of type LoadBalancer using  
-IP targets on 1.18 or later Amazon EKS clusters.
-
-More detail is at the link in the title to this section. An OIDC provider was already created by `eksctl`.  
-Follow these steps:
-```
-# Download an IAM policy for the AWS Load Balancer Controller that allows it to make calls  
-# to AWS APIs on your behalf. This might've already been done as it exists at the AWS
-# account level.
-curl -o elb_iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.1.3/docs/install/iam_policy.json
-
-# Create an IAM policy using the policy downloaded in the previous step. 
-# This might've already been done as it exists at the AWS account level.
-aws iam create-policy \
-    --policy-name AWSLoadBalancerControllerIAMPolicy \
-    --policy-document file://elb_iam_policy.json
-# Take note of the policy ARN that is returned.
-
-# Create an IAM role and annotate the Kubernetes service account named
-# aws-load-balancer-controller in the kube-system namespace
-eksctl create iamserviceaccount \
-  --cluster=babylon-1 \
-  --namespace=kube-system \
-  --name=aws-load-balancer-controller \
-  --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSLoadBalancerControllerIAMPolicy \
-  --override-existing-serviceaccounts \
-  --profile bl-babylon \
-  --approve
-# eksctl will modify the existing CloudFormation for the cluster created to 
-# add this new service account
-
-# Install cert-manager to inject certificate configuration into the webhooks.
-kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.1.1/cert-manager.yaml
-
-# Download the controller specification. 
-curl -o aws-lb-ctrl-v2_1_3_full.yaml https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.1.3/docs/install/v2_1_3_full.yaml
-
-# Modify two things in the aws-lb-ctrl-v2_1_3_full.yaml file
-# 1. Delete the ServiceAccount section from the specification. 
-# 2. Set the --cluster-name value to your Amazon EKS cluster name in the Deployment spec section.
-
-# Apply the file and create the controller
-kubectl apply -f aws-lb-ctrl-v2_1_3_full.yaml
-```
-Check the created pods under the `kube-system` namespace to see if it was succesful:
-```
-─❯ kubectl get pods -n kube-system
-NAME                                           READY   STATUS    RESTARTS   AGE
-aws-load-balancer-controller-b698949bb-gmlm8   1/1     Running   0          38s
-aws-node-4mk9j                                 1/1     Running   0          12m
-aws-node-smm5c                                 1/1     Running   0          12m
-cluster-autoscaler-778bbcdb98-mxwnv            1/1     Running   0          5m36s
-coredns-559b5db75d-fjmhq                       1/1     Running   0          29m
-coredns-559b5db75d-wx266                       1/1     Running   0          29m
-kube-proxy-bwlph                               1/1     Running   0          12m
-kube-proxy-t72lw                               1/1     Running   0          12m
-```
-
 ### <u>Install the Metrics Server</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/metrics-server.html)
 The Kubernetes Metrics Server is an aggregator of resource usage data in your cluster. By default, it  
 monitors CPU and Memory usage. Allows the ability to execute `kubectl top [nodes|pods]` and see metrics.
