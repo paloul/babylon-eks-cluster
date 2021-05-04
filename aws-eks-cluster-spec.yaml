@@ -39,7 +39,7 @@ vpc:
   cidr: 10.10.0.0/16
   # https://eksctl.io/usage/vpc-networking/#nat-gateway
   nat:
-    gateway: HighlyAvailable # other options: Disable, Single (default)
+    gateway: Single # other options: Disable, Single (default)
 
   # https://eksctl.io/usage/vpc-networking/#managing-access-to-the-kubernetes-api-server-endpoints
   clusterEndpoints:
@@ -49,7 +49,7 @@ vpc:
 # Add all possible AZs to ensure nodes can be spun up in any AZ later on. 
 # THIS CAN'T BE CHANGED LATER. YOU WILL HAVE TO CREATE A NEW CLUSTER TO ADD NEW AZ SUPPORT.
 # This list applies to the whole clustr and isn't specific to nodegroups
-availabilityZones: ["us-west-2a", "us-west-2b",  "us-west-2c",  "us-west-2d"]
+availabilityZones: ["us-west-2a", "us-west-2b"]
 
 # https://eksctl.io/usage/kms-encryption/
 #secretsEncryption:
@@ -66,14 +66,14 @@ availabilityZones: ["us-west-2a", "us-west-2b",  "us-west-2c",  "us-west-2d"]
 
 nodeGroups:
   - name: ng-1
-    desiredCapacity: 2
+    desiredCapacity: 3
     minSize: 0
     maxSize: 3
     # Set one nodegroup with 100GB volumes for Kubeflow to get deployed. 
     # Kubeflow requirement states 1-2 Nodes with 100GB volume attached to the node. 
     volumeSize: 100
     volumeType: gp2
-    instanceType: m5a.2xlarge
+    instanceType: m5a.xlarge
     availabilityZones: ["us-west-2a"]
     labels:
       node-class: "worker-node"
@@ -93,7 +93,7 @@ nodeGroups:
   - name: ng-2
     desiredCapacity: 0
     volumeType: gp2
-    instanceType: m5a.2xlarge
+    instanceType: m5a.xlarge
     availabilityZones: ["us-west-2a"]
     labels:
       node-class: "worker-node"
@@ -110,47 +110,13 @@ nodeGroups:
         autoScaler: true
         cloudWatch: true
 
-  - name: 1-gpu-spot-p2-xlarge
-    minSize: 0
-    maxSize: 10
-    instancesDistribution:
-      # set your own max price. AWS spot instance prices no longer cross OnDemand price. 
-      # Comment out the field to default to OnDemand as max price. 
-      maxPrice: 1.2
-      instanceTypes: ["p2.xlarge"]
-      onDemandBaseCapacity: 0
-      onDemandPercentageAboveBaseCapacity: 0
-      spotAllocationStrategy: capacity-optimized
-    labels:
-      lifecycle: Ec2Spot
-      aws.amazon.com/spot: "true"
-      gpu-count: "1"
-    # Stick to one AZ for all GPU nodes. 
-    # In case of termination, this will prevent volumes from being unavailable 
-    # if the new instance got spun up in another AZ.
-    availabilityZones: ["us-west-2a"]
-    taints:
-      spotInstance: "true:PreferNoSchedule"
-    tags:
-      k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
-      k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot: "true"
-      k8s.io/cluster-autoscaler/node-template/label/gpu-count: "1"
-      k8s.io/cluster-autoscaler/node-template/taint/spotInstance: "true:PreferNoSchedule"
-      k8s.io/cluster-autoscaler/enabled: "true"
-      k8s.io/cluster-autoscaler/babylon-1: "owned"
-    iam:
-      withAddonPolicies:
-        autoScaler: true
-        cloudWatch: true
-        albIngress: true
-
   - name: 1-gpu-spot-p3-2xlarge
     minSize: 0
     maxSize: 10
     instancesDistribution:
       # set your own max price. AWS spot instance prices no longer cross OnDemand price. 
       # Comment out the field to default to OnDemand as max price. 
-      maxPrice: 1.2
+      #maxPrice: 1.2
       instanceTypes: ["p3.2xlarge"]
       onDemandBaseCapacity: 0
       onDemandPercentageAboveBaseCapacity: 0
