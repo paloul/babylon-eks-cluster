@@ -189,20 +189,21 @@ kube-proxy-t72lw                               1/1     Running   0          12m
 We now need to also install the Kubernetes Cluster Autoscaler in order to support the  
 capability to scale up our underlying EC2 nodes. Execute the following:
 ```
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
+curl -o cluster-autoscaler-autodiscover.yaml https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
 ```
-Open the Cluster Autoscaler deployment configuration for editing: 
-```
-kubectl edit deployment cluster-autoscaler -n kube-system
-```
+Open the Cluster Autoscaler deployment configuration file for editing: 
 * Find the `node-group-auto-discovery` property in the autoscaler command deployment flag section  
 and add your cluster name to the end, i.e. 
 `--node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/<YOUR CLUSTER NAME>`.
 * In the same section as the node-group-auto-discovery, add: `- --balance-similar-node-groups`
 * In the same section as the node-group-auto-discovery, add: `- --skip-nodes-with-system-pods=false`
 * Find the `image` property and set the right image version to match your Kubernetes cluster, i.e. `image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.18.3`. Kubernetes Version 1.18 is defined in the file  
-`aws-eks-cluster-spec.yaml`. If you have changed the version there, you should change it here as well.
+`aws-eks-cluster-spec.yaml`. If you have changed the version there, you should change it here as well.  
 
+Execute the following to create the cluster autoscaler.
+```
+kubectl apply -f cluster-autoscaler-autodiscover.yaml
+```
 Verify that the Cluster Autoscaler was successfully launched:
 ```
 kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
