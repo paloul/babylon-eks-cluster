@@ -286,7 +286,8 @@ configuration to connect the ingress to the URL we will setup. This probably was
 If a certificate for the same URL exists, there is no need to do this.
 ```
 aws acm request-certificate \
-  --domain-name "*.babylon.beyond.ai" \
+  --domain-name "babylon.beyond.ai" \
+  --subject-alternative-names "*.babylon.beyond.ai" \
   --validation-method DNS \
   --idempotency-token 1234 \
   --options CertificateTransparencyLoggingPreference=DISABLED
