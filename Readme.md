@@ -378,31 +378,158 @@ this takes roughly 20-30 mins to have all resources finally be *READY*.
 ```
 kubectl -n kubeflow get all
 ```
-When all the resources are finally *READY*, you can execute this command to get the URL to the  
-KubeFlow central dashboard:
+When all the resources are finally *READY*, you can proceed to the next steps.
 
-  
-----------------------
-## HERE it gets different between 1.2 and 1.3. 
-We have to manually add static users:  
-https://www.kubeflow.org/docs/distributions/aws/deploy/install-kubeflow/#add-static-users-for-basic-authentication  
+### <u>Install the AWS LB Controller</u> [AWS LB Controller Details](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html)
+Kubeflow installs and maintains its own version of CertManager. AWS LB Controller also relies on a  
+CertManager. The CertManager installed by the steps outlined in AWS Documentation is not compatible  
+with Kubeflow. This is why we install the AWS Load Balancer Controller after installing Kubeflow.  
+This ensures that we have a CertManager installed by Kubeflow beforehand.  
+You should already have an OIDC Provider URL if you used `eksctl` to create the cluster. Follow the steps  
+here to create the Load Balance Controller.
+```
+# View your cluster's OIDC provider URL.
+─❯ aws eks describe-cluster --name babylon-1 --query "cluster.identity.oidc.issuer" --output text
+https://oidc.eks.us-west-2.amazonaws.com/id/95C5D66AFF33506402839B87BA994EFF
 
-The istio for 1.3 is setup differently. Instead of an "ingress" it creates an ingress-gateway that by default is setup with  
-only a Kubernetes NodePort. This does not provide outside traffic, or the creation of an LB. We have to manually mod the istio-gateway and change it from NodePort to LoadBalancer.
-https://www.kubeflow.org/docs/distributions/ibm/deploy/install-kubeflow-on-iks/#expose-the-kubeflow-endpoint-as-a-loadbalancer  
-https://www.kubeflow.org/docs/distributions/ibm/deploy/authentication/
+# List the IAM OIDC providers in your account.
+─❯ aws iam list-open-id-connect-providers | grep 95C5D66AFF33506402839B87BA994EFF
+"Arn": "arn:aws:iam::562046374233:oidc-provider/oidc.eks.us-west-2.amazonaws.com/id/95C5D66AFF33506402839B87BA994EFF"
 
----------------------
+# If output is returned from the previous command, then you already have a provider for your cluster.
+
+# Create an IAM policy from the json already downloaded, lb-controller-iam_policy.json
+# This mightve already been done, you will see an error if the Policy already exists, ignore.
+aws iam create-policy \
+    --policy-name AWSLoadBalancerControllerIAMPolicy \
+    --policy-document file://lb-controller-iam_policy.json
+
+# Create an IAM role and annotate the Kubernetes service account named 
+# aws-load-balancer-controller in the kube-system namespace
+# Get the policy ARN from the AWS IAM Policy Console
+  eksctl create iamserviceaccount \
+  --cluster=babylon-1 \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSLoadBalancerControllerIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve                
+```
+Make the following change to the already provided file, `lb-controller-v2_1_3_full.yaml`:
+1. On Line 477, if you are using a different cluster name, set it here:
+    * `- --cluster-name=babylon-1`
+Apply the YAML Description for the Load Balancer Controller:
+```
+kubectl apply -f lb-controller-v2_1_3_full.yaml
+```
+Verify that the controller was created and functioning:
+```
+kubectl get deployment -n kube-system aws-load-balancer-controller
+```
+
+### <u>Configure External Ingress with AWS ALB and HTTPS</u> 
+We need to find some parameters to set values for the ALB Health Checks. Refer to this [Link](https://itnext.io/istio-external-aws-application-loadbalancer-and-istio-ingress-gateway-fce3bfd3202f) for more details.
+```
+# Find the port used for health checks by istio
+kubectl -n istio-system edit svc istio-ingressgateway
+```
+In its *spec.ports* find the *status-port* and its *nodePort*, i.e. 30462:
+```
+spec:
+  clusterIP: 172.20.190.253
+  externalTrafficPolicy: Cluster
+  ports:
+  - name: status-port
+    nodePort: 30462
+    port: 15021
+    protocol: TCP
+    targetPort: 15021
+```
+Now find the healthcheck path used by istio for its readiness probe:
+```
+kubectl -n istio-system get deploy istio-ingressgateway -o yaml
+```
+Look for *readinessProbe* section and take note of the path, i.e. /healthz/ready:
+```
+readinessProbe:
+    failureThreshold: 30
+    httpGet:
+        path: /healthz/ready
+        port: 15021
+        scheme: HTTP
+    initialDelaySeconds: 1
+    periodSeconds: 2
+    successThreshold: 1
+    timeoutSeconds: 1
+```
+Edit the **istio-ingressgateway** service with two new annotations containing the info we identified above
+```
+kubectl -n istio-system edit svc istio-ingressgateway
+
+# Add these under the annotations field
+alb.ingress.kubernetes.io/healthcheck-path: /healthz/ready
+alb.ingress.kubernetes.io/healthcheck-port: "30462"
+
+# And save which will update the service, use *Shift+zz* as the editor is vi
+```
+Next is to create the Ingress which will create the actual Application Load Balancer with SSL termination. The file is already created and in **babylon-1** folder. There are only two potential modifications that can be made. 
+1. Line 13 update the Certificate ARN with the intended Certificate from AWS ACM
+2. Line 19 if you are potentially using a different URL. Make sure the Certificate supports the hostname
+```
+╰─❯ kubectl apply -f kubeflow-babylon-alb-ingress.yaml
+ingress.extensions/kubeflow-babylon-alb created
+```
+Check if the Ingress was property created and the Address was populated with a URL. The URL here is the  
+external internet facing URL given to the Load Balancer. 
 
 ```
-kubectl get ingress -n istio-system
-
-NAMESPACE      NAME            HOSTS   ADDRESS                                                             PORTS   AGE
-istio-system   istio-ingress   *       a743484b-istiosystem-istio-2af2-xxxxxx.us-west-2.elb.amazonaws.com   80      1h
+╰─❯ kubectl get ingress -n istio-system
+NAME                   CLASS    HOSTS   ADDRESS                                                                  PORTS   AGE
+kubeflow-babylon-alb   <none>   *       k8s-istiosys-kubeflow-b5c0f2d4f8-112067463.us-west-2.elb.amazonaws.com   80      149m
 ```
-If you so choose, you can go into `Route53` and set a custom domain to forward to the ALB URL  
-from that command.
+You should also visit the AWS EC2 Portal and verify the Application Load Balancer was created there.
 
+### <u>Setup the actual custom DNS Hostname</u> 
+Go into `Route53` and set a custom domain to forward to the default ALB URL shown above. You should  
+create a `CNAME` entry of the new custom host to the default URL given to the ALB. 
+```
+# For example
+kubeflow.babylon.beyond.ai	CNAME	Simple	-	
+k8s-istiosys-kubeflow-b5c0f2d4f8-112067463.us-west-2.elb.amazonaws.com
+```
+
+### <u>Add Static Users to Kubeflow</u> [Details](https://www.kubeflow.org/docs/distributions/aws/deploy/install-kubeflow/#add-static-users-for-basic-authentication)
+The Kubeflow 1.3 yaml does not have any users defined. Kubeflow was created without any default users or namespace. Follow the instructions outlined at the link above to add static users.  
+```
+# Edit the dex config with extra users.
+kubectl edit configmap dex -n auth
+
+# As an example, add new users to the file like below.
+# Use this site to generate hash from password strings,
+# https://passwordhashing.com/BCrypt
+ staticPasswords:
+    - email: user@example.com
+      hash: $2y$12$4K/VkmDd1q1Orb3xAt82zu8gk7Ad6ReFR4LCP9UeYE90NLiN9Df72
+      # https://github.com/dexidp/dex/pull/1601/commits
+      # FIXME: Use hashFromEnv instead
+      username: user
+      userID: "15841185641784"
+    - email: babylon@beyond.ai
+      hash: $2b$10$feRbc3bM.PwhbxPMkPi1z.WqfzJ8mvCjwVYNhQyjBfYd.f7BtNsZq
+      username: babylon
+      userID: "15841185641882"
+
+# After editing the config, restart Dex to pick up the changes in the ConfigMap
+kubectl rollout restart deployment dex -n auth
+```
+Next you have to create the Profile Namespace for users to "work" in. A profile file is provided.
+More information and details are [Here](https://www.kubeflow.org/docs/distributions/aws/deploy/install-kubeflow/#post-installation).
+```
+╰─❯ kubectl apply -f babylon-profile.yaml
+profile.kubeflow.org/babylon created
+```
+
+### <u>Deleting the Kubeflow Installation</u> 
 Just as reference, if needed, you can delete the Kubeflow installation from your cluster with:
 ```
 kfctl delete -V -f kfctl_aws.yaml
