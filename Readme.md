@@ -298,17 +298,6 @@ Take note of and record the CertificateArn that is provided:
     "CertificateArn": "arn:aws:acm:us-west-2:562046374233:certificate/e0445d16-9f12-4ee7-a846-ac6c13619986"
 }
 ```
-### <u>Configure Auth0</u> - [Auth0](https://auth0.com/)  
-You will need administrator access to Auth0 to do this section. Please contact a sysadmin  
-to aid you in this process. Use the following URL
-[Authentication using OIDC](https://www.kubeflow.org/docs/distributions/aws/authentication-oidc/) and follow the  
-instructions. Ignore the part about Github Social connection setup.  
-An Auth0 app has already been created, `Babylon-BL`. It uses an existing Enterprise connction  
-that is connected to Beyond.ai's Azure Active Directory.  
-
-Make sure to update the `Allow Callback URLs` field with your intended domain and  
-path, like so `https://kubeflow.babylon.beyond.ai/oauth2/idpresponse`.
-
 ---
 ## Step 3 - Deploy and Configure Kubeflow - [Additional Info](https://www.kubeflow.org/docs/aws/deploy/install-kubeflow/#configure-kubeflow)
 Kubeflow does not work with AWS IAM Roles for Service Accounts when the node groups are unmanaged.  
