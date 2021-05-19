@@ -28,6 +28,11 @@ The actual kubeflow instructions are available at [Install Kubeflow on AWS](http
     * [Install/Upgrade eksctl - OSX/Linux/Windows](https://docs.aws.amazon.com/eks/latest/userguide/eksctl.html)
 * Helm - *(helpful Package Manager for Kubernetes)*
     * [Install](https://docs.aws.amazon.com/eks/latest/userguide/helm.html)
+* kustomize - *(Customize kubernetes YML configurations)*
+    * You will need 4.0.5 for use with ArgoFlow for AWS
+    * `curl --silent --location "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv4.0.5/kustomize_v4.0.5_linux_amd64.tar.gz" | tar xz -C /tmp`
+    * `sudo mv /tmp/kustomize /usr/local/bin`
+    * `kustomize version`
 * kfctl - *(official CLI for Kubeflow)*
     * OSX Installation - v1.2.0
         * `curl --silent --location "https://github.com/kubeflow/kfctl/releases/download/v1.2.0/kfctl_v1.2.0-0-gbc038f9_darwin.tar.gz" | tar xz -C /tmp`
