@@ -86,6 +86,8 @@ nodeGroups:
       k8s.io/cluster-autoscaler/babylon-2: "owned"
     iam:
       withAddonPolicies:
+        ebs: true
+        efs: true
         fsx: true
         albIngress: true
         autoScaler: true
@@ -107,6 +109,8 @@ nodeGroups:
       k8s.io/cluster-autoscaler/babylon-2: "owned"
     iam:
       withAddonPolicies:
+        ebs: true
+        efs: true
         fsx: true
         albIngress: true
         autoScaler: true
@@ -124,9 +128,9 @@ nodeGroups:
       onDemandPercentageAboveBaseCapacity: 0
       spotAllocationStrategy: capacity-optimized
     labels:
-      node-class: "worker-node"
       lifecycle: Ec2Spot
       aws.amazon.com/spot: "true"
+      gpu-count: "0"
     availabilityZones: ["us-west-2a"]
     taints:
       spotInstance: "true:PreferNoSchedule"
@@ -141,6 +145,7 @@ nodeGroups:
     iam:
       withAddonPolicies:
         fsx: true
+        efs: true
         albIngress: true
         autoScaler: true
         cloudWatch: true
@@ -176,6 +181,7 @@ nodeGroups:
     iam:
       withAddonPolicies:
         fsx: true
+        efs: true
         autoScaler: true
         cloudWatch: true
         albIngress: true
