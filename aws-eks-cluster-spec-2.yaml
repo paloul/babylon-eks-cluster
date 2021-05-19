@@ -5,8 +5,9 @@
 # Supporting tutorial can be found at the following link: 
 # https://blog.gofynd.com/how-we-reduced-our-ml-training-costs-by-78-a33805cb00cf
 # This spec creates a cluster on EKS with the following active nodes 
-# - 2x m5a.2xlarge - Accomodates all pods of Kubeflow - no gpu, AMD EPYC7000 8 cpu cores, 32 gb mem
+# - 3x m5a.large   - Accomodates all pods of Kubeflow - no gpu, AMD EPYC7000 2 cpu cores, 8 gb mem
 # It also creates the following nodegroups with 0 nodes running unless a pod comes along and requests for the node to get spun up
+# - m5a.xlarge    -- Max Allowed 10 worker nodes - no gpu, AMD EPYC7000 4 cpu cores, 16 gb mem
 # - m5a.2xlarge   -- Max Allowed 10 worker nodes - no gpu, AMD EPYC7000 8 cpu cores, 32 gb mem
 # - p2.xlarge     -- Max Allowed 10 worker nodes - 1 K80 gpu, 4 cpu cores, 61 gb mem, 12 gb gpu mem
 # - p3.2xlarge    -- Max Allowed 10 worker nodes - 1 V100 gpu, 8 cpu cores, 61 gb mem, 16 gb gpu mem
