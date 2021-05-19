@@ -100,7 +100,7 @@ nodeGroups:
       # set your own max price. AWS spot instance prices no longer cross OnDemand price. 
       # Comment out the field to default to OnDemand as max price. 
       #maxPrice: 1.2
-      instanceTypes: ["m5a.xlarge, m5.xlarge, m5a.2xlarge, m5.2xlarge"] 
+      instanceTypes: ["m5a.xlarge", "m5.xlarge", "m5a.2xlarge", "m5.2xlarge"] 
       onDemandBaseCapacity: 0
       onDemandPercentageAboveBaseCapacity: 0
       spotAllocationStrategy: capacity-optimized
