@@ -7,6 +7,9 @@ The actual kubeflow instructions are available at [Install Kubeflow on AWS](http
 
 ### Prerequisites
 --------------------------------------------
+* yq - *(CLI processor for yaml files)*
+    * [Github page](https://github.com/mikefarah/yq)
+        * `curl --silent --location "https://github.com/mikefarah/yq/releases/download/v4.2.0/yq_linux_amd64.tar.gz" | tar xz && sudo mv yq_linux_amd64 /usr/local/bin/yq`
 * kubectl - *(official CLI for generic Kubernetes)*
     * [Install kubectl - OSX/Linux/Windows](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html)
 * AWS CLI - *(official CLI for AWS)*
