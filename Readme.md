@@ -131,7 +131,31 @@ eksctl delete cluster -f aws-eks-cluster-spec.yaml --profile bl-babylon
 ```
 ### <u>Kubernetes Cluster Autoscaler</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/cluster-autoscaler.html)
 We now need to also install the Kubernetes Cluster Autoscaler in order to support the  
-capability to scale up our underlying EC2 nodes. Execute the following:
+capability to scale up our underlying EC2 nodes.  
+
+You will first have to create the Policy and Role for the cluster autoscaler to work properly:
+```
+# The policy file is already included as part of this repo
+aws iam create-policy \
+    --policy-name AmazonEKSClusterAutoscalerPolicy \
+    --policy-document file://cluster-autoscaler-policy.json
+# Note the ARN returned in the output for use in a later step.
+```
+You can now make a new role with the policy attached. You can create an IAM role and attach an IAM policy  
+to it using eksctl. 
+```
+# Replace the attach-policy-arn field with the arn of the policy created above. 
+# Put your cluster name in the cluster field.
+eksctl create iamserviceaccount \
+  --cluster=babylon-2 \
+  --namespace=kube-system \
+  --name=cluster-autoscaler \
+  --attach-policy-arn=arn:aws:iam::562046374233:policy/AmazonEKSClusterAutoscalerPolicy \
+  --override-existing-serviceaccounts \
+  --approve
+```
+Execute the following to download the cluster autoscaler yaml definition. One has been already downloaded  
+and provider in this repo. If you redownload it, you will have to make some modifications, see below:
 ```
 curl -o cluster-autoscaler-autodiscover.yaml https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
 ```
