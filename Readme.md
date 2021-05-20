@@ -428,8 +428,8 @@ aws iam create-policy \
 # Create an IAM role and annotate the Kubernetes service account named 
 # aws-load-balancer-controller in the kube-system namespace
 # Get the policy ARN from the AWS IAM Policy Console
-  eksctl create iamserviceaccount \
-  --cluster=babylon-1 \
+eksctl create iamserviceaccount \
+  --cluster=babylon-2 \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
   --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSLoadBalancerControllerIAMPolicy \
