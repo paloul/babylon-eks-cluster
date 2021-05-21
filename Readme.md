@@ -177,6 +177,34 @@ Verify that the Cluster Autoscaler was successfully launched:
 kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
 ```
 
+### <u>Install External DNS</u> - [Additional Info](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md)
+External-DNS is a supporting feature controller for Kubernetes that automatically assigns DNS A records  
+to load balancers when created by LB Controllers. The correct permissions need to be assigned to the  
+`kube-system` namespaced pods in order for this to function.
+
+You will first have to create the Policy and Role for the external-dns system to work properly.  
+**Important: Update hosted zone in the external-dns-policy.json to match the domain you want the policy to grant access to.**
+```
+# The policy file is already included as part of this repo
+aws iam create-policy \
+    --policy-name AmazonEKSClusterExternalDnsPolicy \
+    --policy-document file://external-dns-policy.json
+# Note the ARN returned in the output for use in a later step.
+```
+You can now make a new role with the policy attached. You can create an IAM role and attach an IAM policy  
+to it using eksctl. 
+```
+# Replace the attach-policy-arn field with the arn of the policy created above. 
+# Put your cluster name in the cluster field.
+eksctl create iamserviceaccount \
+  --cluster=babylon-2 \
+  --namespace=kube-system \
+  --name=external-dns \
+  --attach-policy-arn=arn:aws:iam::562046374233:policy/AmazonEKSClusterExternalDnsPolicy \
+  --override-existing-serviceaccounts \
+  --approve
+```
+
 ### <u>Install the Metrics Server</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/metrics-server.html)
 The Kubernetes Metrics Server is an aggregator of resource usage data in your cluster. By default, it  
 monitors CPU and Memory usage. Allows the ability to execute `kubectl top [nodes|pods]` and see metrics.
