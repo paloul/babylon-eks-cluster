@@ -190,7 +190,7 @@ in Kubernetes yaml files for services. It needs policies that allows it to sched
 # This mightve already been done, you will see an error if the Policy already exists, ignore.
 aws iam create-policy \
     --policy-name AWSLoadBalancerControllerIAMPolicy \
-    --policy-document file://lb-controller-iam_policy.json
+    --policy-document file://lb-controller-v2_2_0-iam_policy.json
 # Note the ARN returned in the output for use in a later step.
 ```
 You can now make a new role with policy attached. You can create an IAM role and attach an IAM policy  
