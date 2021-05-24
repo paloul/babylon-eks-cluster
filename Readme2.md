@@ -261,6 +261,12 @@ eksctl create iamserviceaccount \
   --approve                
 ```
 
+
+-----------------------------------------
+### Everything below here can be part of the ArgoCD deployment definition
+-----------------------------------------
+
+
 ### <u>Install the Metrics Server</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/metrics-server.html)
 The Kubernetes Metrics Server is an aggregator of resource usage data in your cluster. By default, it  
 monitors CPU and Memory usage. Allows the ability to execute `kubectl top [nodes|pods]` and see metrics.
