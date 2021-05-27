@@ -233,7 +233,7 @@ eksctl create iamserviceaccount \
   --override-existing-serviceaccounts \
   --approve                
 ```
-### <u>Cert Manager</u> - [Additional Info](https://cert-manager.io/docs/) - *NOT USED YET*
+### <u>Cert Manager</u> - [Additional Info](https://cert-manager.io/docs/)
 `cert-manager` is a native Kubernetes certificate management controller. It can help with issuing  
 certificates from a variety of sources, in our case, AWS' ACM. `cert-manager` needs to be able to add  
 records to Route53 in order to solve the DNS01 challenge. To enable this, create a IAM policy.
@@ -249,12 +249,12 @@ You can now make a new role with policy attached. You can create an IAM role and
 to it using eksctl.
 ```
 # Create an IAM role and annotate the Kubernetes service account named 
-# cert-manager in the kube-system namespace.
+# cert-manager in the cert-manager namespace.
 # Update the cluster value
 # Update the attach-policy-arn value with the arn of the policy created above
 eksctl create iamserviceaccount \
   --cluster=babylon-2 \
-  --namespace=kube-system \
+  --namespace=cert-manager \
   --name=cert-manager \
   --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSCertManagerIAMPolicy \
   --override-existing-serviceaccounts \
