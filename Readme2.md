@@ -260,6 +260,39 @@ eksctl create iamserviceaccount \
   --override-existing-serviceaccounts \
   --approve                
 ```
+### <u>AWS FSX Lustre CSI Driver</u> - [Additional Info](https://github.com/kubernetes-sigs/aws-fsx-csi-driver)
+Amazon FSx for Lustre provides a high-performance file system optimized for fast processing for machine learning and  
+high performance computing (HPC) workloads. AWS FSx for Lustre CSI Driver can help Kubernetes users easily leverage this service.  
+
+Lustre is another file system that supports ReadWriteMany. One difference between Amazon EFS and Lustre is that Lustre can be  
+used to cache training data with direct connectivity to Amazon S3 as the backing store. With this configuration, you don’t need  
+to transfer data to the file system before using the volume.  
+
+The Amazon FSx for Lustre Container Storage Interface (CSI) Driver implements CSI specification for container orchestrators (CO)  
+to manage lifecycle of Amazon FSx for Lustre filesystems.
+```
+# Create an IAM policy from the json already downloaded, aws-fsx-csi-driver-policy.json
+# This mightve already been done, you will see an error if the Policy already exists, ignore.
+aws iam create-policy \
+    --policy-name AWSFsxCsiDriverIAMPolicy \
+    --policy-document file://aws-fsx-csi-driver-policy.json
+# Note the ARN returned in the output for use in a later step.
+```
+You can now make a new role with policy attached. You can create an IAM role and attach an IAM policy  
+to it using eksctl.
+```
+# Create an IAM role and annotate the Kubernetes service account named 
+# fsx-csi-controller-sa in the kubeflow namespace.
+# Update the cluster value
+# Update the attach-policy-arn value with the arn of the policy created above
+eksctl create iamserviceaccount \
+  --cluster=babylon-2 \
+  --namespace=kubeflow \
+  --name=fsx-csi-controller-sa \
+  --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSFsxCsiDriverIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve
+```
 
 
 -----------------------------------------
