@@ -98,13 +98,13 @@ You should receive the following JSON listing the use of the `BabylonOrgAccountA
 Execute the following `eksctl` command to create a cluster under the AWS Babylon account. You  
 should be in the same directory as the file `aws-eks-cluster.yaml`. 
 ```
-eksctl create cluster -f aws-eks-cluster-spec.yaml --profile bl-babylon
+eksctl create cluster -f aws-eks-cluster-spec-2.yaml --profile bl-babylon
 ```
 This command will take several minutes as `eksctl` creates the entire stack with  
 supporting services inside AWS, i.e. VPC, Subnets, Security Groups, Route Tables,  
 in addition to the cluster itself. Once completed you should see the following:
 ```
-[✓]  EKS cluster "babylon-1" in "us-west-2" region is ready
+[✓]  EKS cluster "babylon-2" in "us-west-2" region is ready
 ```
 With nothing else running on the cluster you can check `kubectl` and see similar output:  
 ```
@@ -127,13 +127,14 @@ One node group starts up a min 2 EC2 machines that charge by the hour. The other
 are setup to scale down to 0 and only ramp up when pods are needed. In order to avoid being  
 charged while not in use please use the following command to delete your cluster:
 ```
-eksctl delete cluster -f aws-eks-cluster-spec.yaml --profile bl-babylon
+eksctl delete cluster -f aws-eks-cluster-spec-2.yaml --profile bl-babylon
 ```
-### <u>Kubernetes Cluster Autoscaler</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/cluster-autoscaler.html)
-We now need to also install the Kubernetes Cluster Autoscaler in order to support the  
-capability to scale up our underlying EC2 nodes.  
 
-You will first have to create the Policy and Role for the cluster autoscaler to work properly:
+## Step 3 - Create the policies and roles
+### <u>Kubernetes Cluster Autoscaler</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/cluster-autoscaler.html)
+We need to create the appropriate policy and role for the Cluster Autoscaler.
+
+Create the Policy and Role for the Cluster Autoscaler to work properly:
 ```
 # The policy file is already included as part of this repo
 aws iam create-policy \
@@ -154,33 +155,10 @@ eksctl create iamserviceaccount \
   --override-existing-serviceaccounts \
   --approve
 ```
-Execute the following to download the cluster autoscaler yaml definition. One has been already downloaded  
-and provider in this repo. If you redownload it, you will have to make some modifications, see below:
-```
-curl -o cluster-autoscaler-autodiscover.yaml https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
-```
-Open the Cluster Autoscaler deployment configuration file for editing: 
-* Find the `node-group-auto-discovery` property in the autoscaler command deployment flag section  
-and add your cluster name to the end, i.e. 
-`--node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/<YOUR CLUSTER NAME>`.
-* In the same section as the node-group-auto-discovery, add: `- --balance-similar-node-groups`
-* In the same section as the node-group-auto-discovery, add: `- --skip-nodes-with-system-pods=false`
-* Find the `image` property and set the right image version to match your Kubernetes cluster, i.e. `image: k8s.gcr.io/autoscaling/cluster-autoscaler:v1.18.3`. Kubernetes Version 1.18 is defined in the file  
-`aws-eks-cluster-spec.yaml`. If you have changed the version there, you should change it here as well.  
-
-Execute the following to create the cluster autoscaler.
-```
-kubectl apply -f cluster-autoscaler-autodiscover.yaml
-```
-Verify that the Cluster Autoscaler was successfully launched:
-```
-kubectl -n kube-system logs -f deployment.apps/cluster-autoscaler
-```
-
-### <u>Install External DNS</u> - [Additional Info](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md)
+### <u>External-DNS</u> - [Additional Info](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md)
 External-DNS is a supporting feature controller for Kubernetes that automatically assigns DNS A records  
-to load balancers when created by LB Controllers. The correct permissions need to be assigned to the  
-`kube-system` namespaced pods in order for this to function.
+for load balancers when a service/ingress is defined. The correct permissions need to be assigned to the  
+`kube-system` namespace'd pods in order for this to function.
 
 You will first have to create the Policy and Role for the external-dns system to work properly.  
 **Important: Update hosted zone in the external-dns-policy.json to match the domain you want the policy to grant access to.**
@@ -204,6 +182,123 @@ eksctl create iamserviceaccount \
   --override-existing-serviceaccounts \
   --approve
 ```
+### <u>AWS Load Balancer Controller</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html)
+The AWS Load Balancer Controller is in charge of creating the load balancer when ingresses are defined  
+in Kubernetes yaml files for services. It needs policies that allows it to schedule a NLB in specific subnets. 
+```
+# Create an IAM policy from the json already downloaded, lb-controller-iam_policy.json
+# This mightve already been done, you will see an error if the Policy already exists, ignore.
+aws iam create-policy \
+    --policy-name AWSLoadBalancerControllerIAMPolicy \
+    --policy-document file://lb-controller-v2_2_0-iam_policy.json
+# Note the ARN returned in the output for use in a later step.
+```
+You can now make a new role with policy attached. You can create an IAM role and attach an IAM policy  
+to it using eksctl.
+```
+# Create an IAM role and annotate the Kubernetes service account named 
+# aws-load-balancer-controller in the kube-system namespace
+# Get the policy ARN from the AWS IAM Policy Console
+eksctl create iamserviceaccount \
+  --cluster=babylon-2 \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSLoadBalancerControllerIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve                
+```
+### <u>External Secrets</u> - [Additional Info](https://github.com/external-secrets/kubernetes-external-secrets) 
+Kubernetes External Secrets allows you to use external secret management systems, like AWS Secrets Manager or HashiCorp Vault, to securely add secrets in Kubernetes.  
+Create the policy and the role to access the Secret stoe in AWS Secret Manager.
+```
+# Create an IAM policy from the json already downloaded, external-secrets-iam-policy.json
+# This mightve already been done, you will see an error if the Policy already exists, ignore.
+aws iam create-policy \
+    --policy-name AWSExternalSecretsBabylon2IAMPolicy \
+    --policy-document file://external-secrets-iam-policy.json
+# Note the ARN returned in the output for use in a later step.
+```
+You can now make a new role with policy attached. You can create an IAM role and attach an IAM policy  
+to it using eksctl.
+```
+# Create an IAM role and annotate the Kubernetes service account named 
+# external-secrets in the kube-system namespace
+# Get the policy ARN from the AWS IAM Policy Console
+# Update the cluster name if different
+eksctl create iamserviceaccount \
+  --cluster=babylon-2 \
+  --namespace=kube-system \
+  --name=external-secrets \
+  --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSExternalSecretsBabylon2IAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve                
+```
+### <u>Cert Manager</u> - [Additional Info](https://cert-manager.io/docs/)
+`cert-manager` is a native Kubernetes certificate management controller. It can help with issuing  
+certificates from a variety of sources, in our case, AWS' ACM. `cert-manager` needs to be able to add  
+records to Route53 in order to solve the DNS01 challenge. To enable this, create a IAM policy.
+```
+# Create an IAM policy from the json already downloaded, cert-manager-iam_policy.json
+# This mightve already been done, you will see an error if the Policy already exists, ignore.
+aws iam create-policy \
+    --policy-name AWSCertManagerIAMPolicy \
+    --policy-document file://cert-manager-iam_policy.json
+# Note the ARN returned in the output for use in a later step.
+```
+You can now make a new role with policy attached. You can create an IAM role and attach an IAM policy  
+to it using eksctl.
+```
+# Create an IAM role and annotate the Kubernetes service account named 
+# cert-manager in the cert-manager namespace.
+# Update the cluster value
+# Update the attach-policy-arn value with the arn of the policy created above
+eksctl create iamserviceaccount \
+  --cluster=babylon-2 \
+  --namespace=cert-manager \
+  --name=cert-manager \
+  --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSCertManagerIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve                
+```
+### <u>AWS FSX Lustre CSI Driver</u> - [Additional Info](https://github.com/kubernetes-sigs/aws-fsx-csi-driver)
+Amazon FSx for Lustre provides a high-performance file system optimized for fast processing for machine learning and  
+high performance computing (HPC) workloads. AWS FSx for Lustre CSI Driver can help Kubernetes users easily leverage this service.  
+
+Lustre is another file system that supports ReadWriteMany. One difference between Amazon EFS and Lustre is that Lustre can be  
+used to cache training data with direct connectivity to Amazon S3 as the backing store. With this configuration, you don’t need  
+to transfer data to the file system before using the volume.  
+
+The Amazon FSx for Lustre Container Storage Interface (CSI) Driver implements CSI specification for container orchestrators (CO)  
+to manage lifecycle of Amazon FSx for Lustre filesystems.
+```
+# Create an IAM policy from the json already downloaded, aws-fsx-csi-driver-policy.json
+# This mightve already been done, you will see an error if the Policy already exists, ignore.
+aws iam create-policy \
+    --policy-name AWSFsxCsiDriverIAMPolicy \
+    --policy-document file://aws-fsx-csi-driver-policy.json
+# Note the ARN returned in the output for use in a later step.
+```
+You can now make a new role with policy attached. You can create an IAM role and attach an IAM policy  
+to it using eksctl.
+```
+# Create an IAM role and annotate the Kubernetes service account named 
+# fsx-csi-controller-sa in the kubeflow namespace.
+# Update the cluster value
+# Update the attach-policy-arn value with the arn of the policy created above
+eksctl create iamserviceaccount \
+  --cluster=babylon-2 \
+  --namespace=kubeflow \
+  --name=fsx-csi-controller-sa \
+  --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSFsxCsiDriverIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve
+```
+
+
+-----------------------------------------
+### Everything below here can be part of the ArgoCD deployment definition
+-----------------------------------------
+
 
 ### <u>Install the Metrics Server</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/metrics-server.html)
 The Kubernetes Metrics Server is an aggregator of resource usage data in your cluster. By default, it  
@@ -346,8 +441,8 @@ configuration to connect the ingress to the URL we will setup. This probably was
 If a certificate for the same URL exists, there is no need to do this.
 ```
 aws acm request-certificate \
-  --domain-name "babylon.beyond.ai" \
-  --subject-alternative-names "*.babylon.beyond.ai" \
+  --domain-name "babylon2.beyond.ai" \
+  --subject-alternative-names "*.babylon2.beyond.ai" \
   --validation-method DNS \
   --idempotency-token 1234 \
   --options CertificateTransparencyLoggingPreference=DISABLED
@@ -428,53 +523,6 @@ this takes roughly 20-30 mins to have all resources finally be *READY*.
 kubectl -n kubeflow get all
 ```
 When all the resources are finally *READY*, you can proceed to the next steps.
-
-### <u>Install the AWS LB Controller</u> [AWS LB Controller Details](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html)
-Kubeflow installs and maintains its own version of CertManager. AWS LB Controller also relies on a  
-CertManager. The CertManager installed by the steps outlined in AWS Documentation is not compatible  
-with Kubeflow. This is why we install the AWS Load Balancer Controller after installing Kubeflow.  
-This ensures that we have a CertManager installed by Kubeflow beforehand.  
-You should already have an OIDC Provider URL if you used `eksctl` to create the cluster. Follow the steps  
-here to create the Load Balance Controller.
-```
-# View your cluster's OIDC provider URL.
-─❯ aws eks describe-cluster --name babylon-1 --query "cluster.identity.oidc.issuer" --output text
-https://oidc.eks.us-west-2.amazonaws.com/id/95C5D66AFF33506402839B87BA994EFF
-
-# List the IAM OIDC providers in your account.
-─❯ aws iam list-open-id-connect-providers | grep 95C5D66AFF33506402839B87BA994EFF
-"Arn": "arn:aws:iam::562046374233:oidc-provider/oidc.eks.us-west-2.amazonaws.com/id/95C5D66AFF33506402839B87BA994EFF"
-
-# If output is returned from the previous command, then you already have a provider for your cluster.
-
-# Create an IAM policy from the json already downloaded, lb-controller-iam_policy.json
-# This mightve already been done, you will see an error if the Policy already exists, ignore.
-aws iam create-policy \
-    --policy-name AWSLoadBalancerControllerIAMPolicy \
-    --policy-document file://lb-controller-iam_policy.json
-
-# Create an IAM role and annotate the Kubernetes service account named 
-# aws-load-balancer-controller in the kube-system namespace
-# Get the policy ARN from the AWS IAM Policy Console
-eksctl create iamserviceaccount \
-  --cluster=babylon-2 \
-  --namespace=kube-system \
-  --name=aws-load-balancer-controller \
-  --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSLoadBalancerControllerIAMPolicy \
-  --override-existing-serviceaccounts \
-  --approve                
-```
-Make the following change to the already provided file, `lb-controller-v2_1_3_full.yaml`:
-1. On Line 477, if you are using a different cluster name, set it here:
-    * `- --cluster-name=babylon-1`
-Apply the YAML Description for the Load Balancer Controller:
-```
-kubectl apply -f lb-controller-v2_1_3_full.yaml
-```
-Verify that the controller was created and functioning:
-```
-kubectl get deployment -n kube-system aws-load-balancer-controller
-```
 
 ### <u>Configure External Ingress with AWS ALB and HTTPS</u> 
 We need to find some parameters to set values for the ALB Health Checks. Refer to this [Link](https://itnext.io/istio-external-aws-application-loadbalancer-and-istio-ingress-gateway-fce3bfd3202f) for more details.

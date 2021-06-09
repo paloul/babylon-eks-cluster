@@ -1,0 +1,166 @@
+# https://eksctl.io/usage/schema/
+#
+# Cost-Optimized EKS cluster for Kubeflow with spot GPU instances and node scale down to zero
+# Built in efforts to reducing training costs of ML workloads.
+# Supporting tutorial can be found at the following link: 
+# https://blog.gofynd.com/how-we-reduced-our-ml-training-costs-by-78-a33805cb00cf
+# This spec creates a cluster on EKS with the following active nodes 
+# - 3x m5a.large   - Accomodates all pods of Kubeflow - no gpu, AMD EPYC7000 2 cpu cores, 8 gb mem
+# It also creates the following nodegroups with 0 nodes running unless a pod comes along and requests for the node to get spun up
+# - m5a.xlarge    -- Max Allowed 10 worker nodes - no gpu, AMD EPYC7000 4 cpu cores, 16 gb mem
+# - m5a.2xlarge   -- Max Allowed 10 worker nodes - no gpu, AMD EPYC7000 8 cpu cores, 32 gb mem
+# - p2.xlarge     -- Max Allowed 10 worker nodes - 1 K80 gpu, 4 cpu cores, 61 gb mem, 12 gb gpu mem
+# - p3.2xlarge    -- Max Allowed 10 worker nodes - 1 V100 gpu, 8 cpu cores, 61 gb mem, 16 gb gpu mem
+# - p3.8xlarge    -- Max Allowed 04 worker nodes - 3 V100 gpu, 32 cpu cores, 244 gb mem, 64 gb gpu mem
+# - p3dn.24xlarge -- Max Allowed 01 worker nodes - 8 V100 gpu, 96 cpu cores, 768 gb mem, 256 gb gpu mem
+
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  # Name of your cluster, change to whatever you find fit.
+  # If changed, make sure to change all nodegroup tags from 
+  # 'k8s.io/cluster-autoscaler/babylon-2: "owned"' --> 'k8s.io/cluster-autoscaler/your-new-name: "owned"'
+  name: babylon-2
+  # choose your region wisely, this will significantly impact the cost incurred
+  region: us-west-2 # Oregon
+  # 1.14 Kubernetes version since Kubeflow 1.0 officially supports the same
+  version: '1.18' # Downgrading to 1.18 because Kubeflow officially hasnt listed 1.19 support
+  tags:
+    # Add more cloud tags if needed for billing
+    environment: development
+    creator: paloul
+    project: babylon
+    cluster: babylon-2
+
+iam:
+  # https://eksctl.io/usage/schema/#iam-withOIDC
+  withOIDC: true
+
+vpc:
+  cidr: 10.20.0.0/16
+  # https://eksctl.io/usage/vpc-networking/#nat-gateway
+  nat:
+    gateway: Single # other options: Disable, Single (default)
+
+  # https://eksctl.io/usage/vpc-networking/#managing-access-to-the-kubernetes-api-server-endpoints
+  clusterEndpoints:
+    publicAccess:  true
+    privateAccess: true
+
+# Add all possible AZs to ensure nodes can be spun up in any AZ later on. 
+# THIS CAN'T BE CHANGED LATER. YOU WILL HAVE TO CREATE A NEW CLUSTER TO ADD NEW AZ SUPPORT.
+# This list applies to the whole clustr and isn't specific to nodegroups
+availabilityZones: ["us-west-2a", "us-west-2b"]
+
+# https://eksctl.io/usage/kms-encryption/
+#secretsEncryption:
+  # KMS key used for envelope encryption of Kubernetes secrets
+  #keyARN: arn:aws:kms:us-west-2:<account>:key/<key>
+
+# https://eksctl.io/usage/schema/#fargateProfiles
+#fargateProfiles:
+  #- name: fp-babylon
+    #selectors:
+      # All workloads in the "fp-babylon" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      #- namespace: fp-babylon
+
+nodeGroups:
+  - name: ng-1
+    desiredCapacity: 3
+    minSize: 3
+    maxSize: 3
+    # Set one nodegroup with 100GB volumes for Kubeflow to get deployed. 
+    # Kubeflow requirement states 1-2 Nodes with 100GB volume attached to the node. 
+    volumeSize: 200
+    volumeType: gp2
+    instanceType: m5a.large
+    availabilityZones: ["us-west-2a"]
+    labels:
+      node-class: "worker-node"
+    tags:
+      # EC2 tags required for cluster-autoscaler auto-discovery
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: OnDemand
+      k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot: "false"
+      k8s.io/cluster-autoscaler/node-template/label/gpu-count: "0"
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/babylon-2: "owned"
+    iam:
+      withAddonPolicies:
+        efs: true
+        fsx: true
+        albIngress: true
+        autoScaler: true
+        cloudWatch: true
+
+  - name: ng-2
+    minSize: 0
+    maxSize: 10
+    instancesDistribution:
+      # set your own max price. AWS spot instance prices no longer cross OnDemand price. 
+      # Comment out the field to default to OnDemand as max price. 
+      #maxPrice: 1.2
+      instanceTypes: ["m5a.xlarge", "m5.xlarge", "m5a.2xlarge", "m5.2xlarge"] 
+      onDemandBaseCapacity: 0
+      onDemandPercentageAboveBaseCapacity: 0
+      spotAllocationStrategy: capacity-optimized
+    labels:
+      node-class: "spot-worker-node"
+      lifecycle: Ec2Spot
+      aws.amazon.com/spot: "true"
+      gpu-count: "0"
+    availabilityZones: ["us-west-2a"]
+    taints:
+      spotInstance: "true:PreferNoSchedule"
+    tags:
+      # EC2 tags required for cluster-autoscaler auto-discovery
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+      k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot: "true"
+      k8s.io/cluster-autoscaler/node-template/label/gpu-count: "0"
+      k8s.io/cluster-autoscaler/node-template/taint/spotInstance: "true:PreferNoSchedule"
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/babylon-2: "owned"
+    iam:
+      withAddonPolicies:
+        fsx: true
+        efs: true
+        albIngress: true
+        autoScaler: true
+        cloudWatch: true
+
+  - name: ng-3-spot-gpu-p3-2xlarge
+    minSize: 0
+    maxSize: 10
+    instancesDistribution:
+      # set your own max price. AWS spot instance prices no longer cross OnDemand price. 
+      # Comment out the field to default to OnDemand as max price. 
+      #maxPrice: 1.2
+      instanceTypes: ["p3.2xlarge"] # 1gpu, 8cpu, 61gb system mem, 16gb gpu mem
+      onDemandBaseCapacity: 0
+      onDemandPercentageAboveBaseCapacity: 0
+      spotAllocationStrategy: capacity-optimized
+    labels:
+      lifecycle: Ec2Spot
+      aws.amazon.com/spot: "true"
+      gpu-count: "1"
+    # Stick to one AZ for all GPU nodes. 
+    # In case of termination, this will prevent volumes from being unavailable 
+    # if the new instance got spun up in another AZ.
+    availabilityZones: ["us-west-2a"]
+    taints:
+      spotInstance: "true:PreferNoSchedule"
+    tags:
+      k8s.io/cluster-autoscaler/node-template/label/lifecycle: Ec2Spot
+      k8s.io/cluster-autoscaler/node-template/label/aws.amazon.com/spot: "true"
+      k8s.io/cluster-autoscaler/node-template/label/gpu-count: "1"
+      k8s.io/cluster-autoscaler/node-template/taint/spotInstance: "true:PreferNoSchedule"
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/babylon-2: "owned"
+    iam:
+      withAddonPolicies:
+        fsx: true
+        efs: true
+        autoScaler: true
+        cloudWatch: true
+        albIngress: true
