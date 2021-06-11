@@ -294,6 +294,38 @@ eksctl create iamserviceaccount \
   --approve
 ```
 
+### <u>AWS EFS CSI Driver</u> - [Additional Info](https://github.com/kubernetes-sigs/aws-efs-csi-driver)
+Amazon EFS is managed NFS in AWS. Amazon EFS supports ReadWriteMany access mode, which means the volume can be mounted as  
+read-write by many nodes. It is very useful for creating a shared filesystem that can be mounted into pods such as Jupyter.  
+For example, one group can share datasets or models across an entire team. By default, the Amazon EFS CSI driver is not  
+enabled and you need to follow steps to install it.  
+
+The Amazon EFS Container Storage Interface (CSI) Driver implements CSI specification for container orchestrators (CO)  
+to manage lifecycle of Amazon EFS filesystems.
+```
+# Create an IAM policy from the json already downloaded, aws-efs-csi-driver-policy.json
+# This mightve already been done, you will see an error if the Policy already exists, ignore.
+aws iam create-policy \
+    --policy-name AWSEFSCsiDriverIAMPolicy \
+    --policy-document file://aws-efs-csi-driver-policy.json
+# Note the ARN returned in the output for use in a later step.
+```
+You can now make a new role with policy attached. You can create an IAM role and attach an IAM policy  
+to it using eksctl.
+```
+# Create an IAM role and annotate the Kubernetes service account named 
+# efs-csi-controller-sa in the kube-system namespace.
+# Update the cluster value
+# Update the attach-policy-arn value with the arn of the policy created above
+eksctl create iamserviceaccount \
+  --cluster=babylon-2 \
+  --namespace=kube-system \
+  --name=efs-csi-controller-sa \
+  --attach-policy-arn=arn:aws:iam::562046374233:policy/AWSEFSCsiDriverIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve
+```
+
 
 -----------------------------------------
 ### Everything below here can be part of the ArgoCD deployment definition
