@@ -70,7 +70,7 @@ nodeGroups:
   - name: ng-1
     desiredCapacity: 3
     minSize: 3
-    maxSize: 3
+    maxSize: 6
     # Set one nodegroup with 100GB volumes for Kubeflow to get deployed. 
     # Kubeflow requirement states 1-2 Nodes with 100GB volume attached to the node. 
     volumeSize: 200
@@ -96,15 +96,15 @@ nodeGroups:
 
   - name: ng-2
     minSize: 0
-    maxSize: 10
+    maxSize: 12
     instancesDistribution:
       # set your own max price. AWS spot instance prices no longer cross OnDemand price. 
       # Comment out the field to default to OnDemand as max price. 
       #maxPrice: 1.2
-      instanceTypes: ["m5a.xlarge", "m5.xlarge", "m5a.2xlarge", "m5.2xlarge"] 
+      instanceTypes: ["m5a.xlarge", "m5.xlarge", "m5a.2xlarge", "m5.2xlarge, m5a.4xlarge, m5.4xlarge"] 
       onDemandBaseCapacity: 0
-      onDemandPercentageAboveBaseCapacity: 0
-      spotAllocationStrategy: capacity-optimized
+      onDemandPercentageAboveBaseCapacity: 25
+      spotAllocationStrategy: "capacity-optimized-prioritized"
     labels:
       node-class: "spot-worker-node"
       lifecycle: Ec2Spot
