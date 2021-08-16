@@ -185,6 +185,12 @@ eksctl create iamserviceaccount \
 ### <u>AWS Load Balancer Controller</u> - [Additional Info](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html)
 The AWS Load Balancer Controller is in charge of creating the load balancer when ingresses are defined  
 in Kubernetes yaml files for services. It needs policies that allows it to schedule a NLB in specific subnets. 
+The policy version for the LB Controller should match the actual version of the LB that gets deployed in cluster.
+The one contained within this repo is marked lb-controller-v2_2_0 that matches version 2.2.0 of the LB Controller.
+The AWS Load Balancer Controller is installed with a Helm chart via ArgoCD deployment. The Helm Chart link is:  
+https://artifacthub.io/packages/helm/aws/aws-load-balancer-controller/1.2.0. This Helm Chart is versioned 1.2.0,  
+but the underlying LB Controller is marked as version 2.2.0. If the Helm Chart is updated and a newer LB Controller  
+version is used, then make sure to update the IAM Policy for the LB Controller here as well.
 ```
 # Create an IAM policy from the json already downloaded, lb-controller-iam_policy.json
 # This mightve already been done, you will see an error if the Policy already exists, ignore.
